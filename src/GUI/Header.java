@@ -64,7 +64,7 @@ public class Header extends JPanel {
 	        }
         	
         	
-        };
+        }; 
         
 
         
