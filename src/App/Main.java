@@ -124,6 +124,8 @@ public class Main extends JFrame {
 		   
 		   List<JMenuItem> listIT = khp.getMenuOption();
 		   for(JMenuItem item : listIT) {
+			   item.addActionListener(e -> show("khachhang"));
+			
 			   item.addMouseListener(new MouseAdapter() {
 					
 		    		public void mouseEntered(MouseEvent e) {
@@ -134,9 +136,11 @@ public class Main extends JFrame {
 		                isHoverPopup[0] = false;
 		                hideTimer.restart();
 		            }
+		           
 		    	
 		    	});
 			   item.setForeground(Color.WHITE);
+			   
 			   popup.add(item);
 		   }
 	   }
