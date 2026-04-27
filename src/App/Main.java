@@ -5,6 +5,9 @@ import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLightLaf;
 import com.formdev.flatlaf.themes.FlatMacLightLaf;
 import com.formdev.flatlaf.ui.FlatPopupMenuSeparatorUI;
+
+import Controller.KhachHangController;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -13,6 +16,7 @@ import java.sql.Time;
 import java.util.List;
 public class Main extends JFrame {
 	 KhachHangPanel khp = new KhachHangPanel();
+	 KhachHangController khController = new KhachHangController(khp);
 	private CardLayout cardLayout;
 	private JPanel content;
 	String[] khachHangOptions = null;
@@ -70,8 +74,22 @@ public class Main extends JFrame {
 		};
 	
 	
-	private JButton createNavButton(String text, String icon, String[] subItems) {
-		JButton btn = new JButton("  " + icon + "   " + text);
+	private JButton createNavButton(String text, String iconURL, String[] subItems) {
+		JButton btn = new JButton(text);
+	try {
+			
+			java.io.File imgFile = new java.io.File(iconURL);
+			if (imgFile.exists()) {
+				btn.setIcon(new ImageIcon(imgFile.getAbsolutePath()));
+				btn.setIconTextGap(15);
+			}
+			
+			
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
+		
+		
 	    btn.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 	    btn.setContentAreaFilled(false);
 	    btn.setMaximumSize(new Dimension(Integer.MAX_VALUE,45));
@@ -200,17 +218,18 @@ public class Main extends JFrame {
         menuPanel.setLayout(new BoxLayout(menuPanel, BoxLayout.Y_AXIS));
         menuPanel.setBorder(BorderFactory.createEmptyBorder(20, 15, 20, 15)); // Tạo padding lề
 		
+        ImageIcon ic = new ImageIcon();
         
-        JButton btnDashboard = createNavButton("Trang chủ", "🏠");
-        JButton btnKhachHang = createNavButton("Quản lí khách hàng", "👥", khachHangOptions);
-        JButton btnVe = createNavButton("Quản lí vé", "🎫", veOptions);
-        JButton btnHoaDon = createNavButton("Hóa đơn", "🧾", hoaDonOptions);
-        JButton btnTraCuu = createNavButton("Tra cứu thông tin", "🔍", traCuuOptions);
-        JButton btnNhanVien = createNavButton("Quản lý nhân viên", "👤", nhanVienOptions);
-        JButton btnChuyenTau = createNavButton("Quản lí chuyến tàu", "🚆", chuyenTauOptions);
-        JButton btnKhuyenMai = createNavButton("Quản lí khuyến mãi", "🏷️", khuyenMaiOptions);
-        JButton btnThongKe = createNavButton("Thống kê", "📊", thongKeOptions);
-        JButton btnHoTro = createNavButton("Hỗ trợ", "❓", hoTroOptions);
+        JButton btnDashboard = createNavButton("Trang chủ", "img/home-2-fill.png");
+        JButton btnKhachHang = createNavButton("Quản lí khách hàng", "img/group-fill.png", khachHangOptions);
+        JButton btnVe = createNavButton("Quản lí vé", "img/ticket-fill.png", veOptions);
+        JButton btnHoaDon = createNavButton("Hóa đơn", "img/bill-line.png", hoaDonOptions);
+        JButton btnTraCuu = createNavButton("Quản lí Thuế", "img/seo-fill.png", traCuuOptions);
+        JButton btnNhanVien = createNavButton("Quản lý nhân viên", "img/id-card-line.png", nhanVienOptions);
+        JButton btnChuyenTau = createNavButton("Quản lí chuyến tàu", "img/subway.png", chuyenTauOptions);
+        JButton btnKhuyenMai = createNavButton("Quản lí khuyến mãi", "img/discount.png", khuyenMaiOptions);
+        JButton btnThongKe = createNavButton("Thống kê", "img/bar-chart-box-line.png", thongKeOptions);
+        JButton btnHoTro = createNavButton("Hỗ trợ", "img/customer-service-line.png", hoTroOptions);
         
         menuPanel.add(btnDashboard);
         menuPanel.add(Box.createVerticalStrut(5));
@@ -232,7 +251,7 @@ public class Main extends JFrame {
         menuPanel.add(Box.createVerticalStrut(5));
         menuPanel.add(btnHoTro);
         
-        JButton btnLogout = createNavButton("Đăng xuất", "🚪");
+        JButton btnLogout = createNavButton("Đăng xuất", "img/logout-box-line.png");
         JPanel logoutPanel = new JPanel(new BorderLayout());
         logoutPanel.setOpaque(false);
         logoutPanel.setBorder(BorderFactory.createEmptyBorder(0, 15, 20, 15));
@@ -273,8 +292,27 @@ public class Main extends JFrame {
         show("dashboard");
 	}
 	
-	private JButton createNavButton(String text, String icon) {
-        JButton btn = new JButton("  " + icon + "   " + text);
+	private JButton createNavButton(String text, String iconURL) {
+
+        JButton btn = new JButton(text);
+		
+		
+		try {
+			
+			java.io.File imgFile = new java.io.File(iconURL);
+			if (imgFile.exists()) {
+				btn.setIcon(new ImageIcon(imgFile.getAbsolutePath()));
+				btn.setIconTextGap(15);
+			}
+			
+			
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
+		
+		
+		
+		
         btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45)); // Nút dài hết lề
         btn.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         btn.setForeground(Color.WHITE);

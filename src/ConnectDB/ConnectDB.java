@@ -36,13 +36,13 @@ public class ConnectDB {
    
    public Connection getConnection() throws SQLException{
 	   if( conn == null || conn.isClosed()) {
-		conn =   DriverManager.getConnection(
+		   conn =   DriverManager.getConnection(
 				   properties.getProperty("db.url"),properties.getProperty("db.user"),properties.getProperty("db.password")
 				   
 				   
 				   );
-	   }
-			   
+	   	}
+	  
 	    return conn;
    }
    

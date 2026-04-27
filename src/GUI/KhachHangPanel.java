@@ -3,10 +3,15 @@ import java.util.*;
 import java.util.List;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
+import com.formdev.flatlaf.FlatLightLaf;
 
+import DAO.KhachHangDAO;
+import Entity.KhachHang;
+//import sun.security.ec.point.ProjectivePoint;
 public class KhachHangPanel extends JPanel {
 	 private String[] khachHangOptions = {
 		        "Thêm khách hàng",
@@ -16,18 +21,135 @@ public class KhachHangPanel extends JPanel {
 		    };
     private JTable table;
     private DefaultTableModel tableModel;
+    
+    
+    public JButton createButtonExcel(String Cmt) {
+    	JButton btn = new JButton(Cmt);
+    	btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    	String style = "arc:12; focusWidth:0; font: bold 13;";
+    	  if (Cmt.contains("Nhập")) {
+    	        btn.setBackground(new Color(59,130,246)); // xanh dương
+    	    }
+    	  else if(Cmt.contains("Tìm"))  {
+    		  btn.setBackground(Color.gray); // nền trắng
+    	        btn.setForeground(Color.BLACK); // chữ đen
+    	        
+    	        btn.setPreferredSize(new Dimension(60, 36));
+    	  }
+    	  
+    	  else {
+    	        btn.setBackground(new Color(34,197,94)); // xanh lá
+    	    }
+    	  btn.setPreferredSize(new Dimension(140, 36)); // 🔥 CHUẨN CHIỀU CAO
+    	    btn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+    	    btn.setFocusPainted(false);
+    	    
+//    	    btn.putClientProperty("FlatLaf.style", "arc:10; margin:8,15,8,15");
+//    	   
+    	    btn.putClientProperty("FlatLaf.style", style + "margin:8,15,8,15");
+    	   
+    	return btn;
+    }
+    
 
+    
+    public JPanel createCardstatistical( String  IconURL , String title, int value ) {
+    	JPanel card = new JPanel(new BorderLayout(15,0));
+    	ImageIcon icon = new ImageIcon(IconURL);
+        Image img = icon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
+        JLabel iconLabel = new JLabel(new ImageIcon(img));
+    	
+        JPanel textPanel = new JPanel();
+        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
+        textPanel.setBackground(Color.WHITE);
+        
+        
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        titleLabel.setForeground(Color.GRAY);
+        
+        JLabel valueLabel = new JLabel(String.valueOf(value));
+        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        valueLabel.setForeground(Color.BLACK);
+        
+        textPanel.add(titleLabel);
+        textPanel.add(valueLabel);
+
+        // add vào card
+        card.add(iconLabel, BorderLayout.WEST);
+        card.add(textPanel, BorderLayout.CENTER);
+        
+        
+    	
+    	card.putClientProperty("FlatLaf.style",  "arc:10; border:10,10,10,10; background:#FFFFFF");
+    	
+    	return card;
+    	
+    }
+    
+    
+    
     public KhachHangPanel() {
-        // 1. Setup Layout tổng thể y hệt DashboardPanel
+        
         setLayout(new BorderLayout());
-        setBackground(new Color(245, 247, 250)); // Màu nền tổng thể xám xanh nhạt
+        setBackground(new Color(245, 247, 250)); 
 
         // 2. Phần Header (Tiêu đề và Mô tả)
         JPanel header = new JPanel();
-        header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
+        header.setLayout(new BorderLayout());
         header.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         header.setBackground(new Color(245, 247, 250)); // Đồng bộ màu nền
+        
+        JPanel headerL = new JPanel();
+        headerL.setLayout(new BoxLayout(headerL, BoxLayout.Y_AXIS));
+        headerL.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JPanel headerR = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
+        
+        JPanel cardKH = createCardstatistical("img/user2.png", "Tổng khách hàng ", 125);
+      
+        JPanel cardKHmoi = createCardstatistical("img/user2.png", "Mới Tháng Này  ", 15);
+        JPanel cardKHMua = createCardstatistical("img/user2.png", "Đặt chổ gần đây ", 25);
+        
+        
+        JPanel actionPanel = new JPanel(new BorderLayout());
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER,10,0));
+        JTextField txtSearch = new JTextField();
+        txtSearch.setPreferredSize(new Dimension(400, 36));
+        txtSearch.putClientProperty("FlatLaf.style", "arc:10");
+        JButton btnSearch = createButtonExcel("Tìm Kiếm");
+        
+        
+        
+        searchPanel.add(txtSearch);
+        searchPanel.add(btnSearch);
+        
+        
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT,10,0));
 
+        
+        
+        
+        JButton imports= createButtonExcel("Nhập file excel");
+        JButton export = createButtonExcel("Xuất file excel");
+        
+        
+        
+        rightPanel.add(export);
+        rightPanel.add(imports);
+        
+        actionPanel.add(searchPanel, BorderLayout.WEST);
+        actionPanel.add(rightPanel, BorderLayout.CENTER);
+        
+        headerR.add(cardKHMua);
+     
+        headerR.add(cardKHmoi);
+        
+        headerR.add(cardKH);
+        
+        
+        
+        
+        
         JLabel title = new JLabel("Quản lí khách hàng");
         title.setFont(new Font("Arial", Font.BOLD, 22));
 
@@ -35,9 +157,13 @@ public class KhachHangPanel extends JPanel {
         sub.setForeground(Color.GRAY);
         sub.setFont(new Font("Arial", Font.PLAIN, 12));
 
-        header.add(title);
-        header.add(Box.createVerticalStrut(5));
-        header.add(sub);
+        headerL.add(title);
+        headerL.add(Box.createVerticalStrut(5));
+        headerL.add(sub);
+        
+        header.add(headerL,BorderLayout.WEST);
+        header.add(headerR,BorderLayout.EAST);
+        header.add(actionPanel,BorderLayout.SOUTH);
         
         add(header, BorderLayout.NORTH);
 
@@ -45,7 +171,7 @@ public class KhachHangPanel extends JPanel {
         JPanel main = new JPanel();
         main.setLayout(new BorderLayout());
         main.setBackground(new Color(245, 247, 250));
-        main.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+       main.putClientProperty("FlatLaf.style", "arc:20; border:10,10,10,10");
 
         // Tạo một Panel bọc cái bảng lại cho giống giao diện "Card" trong Dashboard
         JPanel tableCard = new JPanel(new BorderLayout());
@@ -65,56 +191,65 @@ public class KhachHangPanel extends JPanel {
         };
         
         table = new JTable(tableModel);
-        
+        table.setRowHeight(40);
         // Format Style cho Table đồng bộ với hệ thống
         table.setFont(new Font("Arial", Font.PLAIN, 13));
         table.setRowHeight(35); // Chiều cao dòng
         table.setGridColor(new Color(235, 235, 235)); // Màu đường viền bảng
         table.setShowVerticalLines(false); // Ẩn kẻ dọc cho hiện đại
         table.setSelectionBackground(new Color(232, 240, 254)); // Màu khi chọn dòng
-
+        
         // Format Header của Table
         JTableHeader tableHeader = table.getTableHeader();
         tableHeader.setFont(new Font("Arial", Font.BOLD, 13));
         tableHeader.setBackground(Color.WHITE);
         tableHeader.setPreferredSize(new Dimension(100, 40));
         tableHeader.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(220, 220, 220))); // Chỉ có viền dưới
-
+        
         // Cuộn trang
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.getViewport().setBackground(Color.WHITE);
         scrollPane.setBorder(BorderFactory.createEmptyBorder()); // Bỏ viền mặc định của ScrollPane
 
         tableCard.add(scrollPane, BorderLayout.CENTER);
+        
+        tableCard.putClientProperty("FlatLaf.style",
+        	    "arc:20; border:12,12,12,12; background:#FFFFFF");
+        
         main.add(tableCard, BorderLayout.CENTER);
         
-        JPanel t = new JPanel();
-        
-        
-        List<JMenuItem> listit = getMenuOption();
-        for(JMenuItem item: listit) {
-        	t.add(item);
-        }
+      
         
         
         
         add(main, BorderLayout.CENTER);
-        add(t, BorderLayout.WEST);
         
        
         
         // 4. Load dữ liệu giả để test giao diện
-        loadMockData();
+     
     }
 
     // Hàm thêm dữ liệu mẫu (Sau này bạn xóa hàm này đi và load từ DB lên)
-    private void loadMockData() {
-        tableModel.addRow(new Object[]{"KH001", "Nguyễn Văn A", "079090123456", "0901234567", "nguyenvana@email.com", "2024-05-01"});
-        tableModel.addRow(new Object[]{"KH002", "Trần Thị B", "079090123457", "0912345678", "tranthib@email.com", "2024-05-02"});
-        tableModel.addRow(new Object[]{"KH003", "Lê Văn C", "079090123458", "0923456789", "levanc@email.com", "2024-05-03"});
-        tableModel.addRow(new Object[]{"KH004", "Phạm Thị D", "079090123459", "0934567890", "phamthid@email.com", "2024-05-04"});
-        tableModel.addRow(new Object[]{"KH005", "Hoàng Văn E", "079090123460", "0945678901", "hoangvane@email.com", "2024-05-05"});
+
+    
+    
+    
+    public void setData(List<KhachHang> list) {
+    	tableModel.setRowCount(0);
+    	for(KhachHang kh: list) {
+    		tableModel.addRow(new Object[] {
+    				kh.getMaKH(), kh.getTenKH(), kh.getCccd(),
+    	            kh.getSoDienThoai(), kh.getEmail(), kh.getNgayDangKy()
+    		});
+    		
+    	}
+    	
+    	
+    	
+    	
     }
+   
     
     // Getter để gọi tableModel từ Controller/DAO đổ dữ liệu
     public DefaultTableModel getTableModel() {
@@ -302,21 +437,6 @@ public class KhachHangPanel extends JPanel {
     // Tra cứu khách hàng
     private void traCuuKhachHang() {
         String keyword = JOptionPane.showInputDialog(this, "Nhập tên hoặc SĐT cần tìm:");
-        if (keyword == null || keyword.trim().isEmpty()) {
-            return;
-        }
-        
-        // Xóa hết dữ liệu cũ
-        tableModel.setRowCount(0);
-        
-        // Tìm kiếm và hiển thị kết quả
-        // TODO: Gọi database tìm kiếm
-        // Tạm thời tìm trong mock data
-        if (keyword.contains("A") || keyword.contains("1")) {
-            loadMockData(); // Load lại toàn bộ nếu tìm thấy
-        } else {
-            JOptionPane.showMessageDialog(this, "Không tìm thấy khách hàng!");
-            loadMockData(); // Load lại toàn bộ
-        }
+        JOptionPane.showMessageDialog(table, "chưa hoàn thiện chức năng");
     }
 }

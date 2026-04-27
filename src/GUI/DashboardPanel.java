@@ -24,7 +24,8 @@ private JPanel createCard(String title , String value ) {
 
     card.add(t, BorderLayout.NORTH);
     card.add(v, BorderLayout.CENTER);
-    
+    card.putClientProperty("FlatLaf.style",
+    	    "arc:20; border:12,12,12,12; background:#FFFFFF");
     
     
 	return card;
@@ -76,7 +77,8 @@ private JPanel createCard(String title , String value, Icon icon  , Color iconBg
     gbc.gridy = 3;
     card.add(lblSub, gbc);
     
-    
+    card.putClientProperty("FlatLaf.style",
+    	    "arc:20; border:12,12,12,12; background:#FFFFFF");
 	return card;
 }
 
@@ -105,7 +107,8 @@ private JPanel createChartCard(String title, ChartPanel chart) {
 
     // Gắn chart vào giữa
     panel.add(chart, BorderLayout.CENTER);
-
+    panel.putClientProperty("FlatLaf.style",
+    	    "arc:20; border:12,12,12,12; background:#FFFFFF");
     return panel;
 
 }
