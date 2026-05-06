@@ -15,8 +15,14 @@ import java.awt.event.MouseEvent;
 import java.sql.Time;
 import java.util.List;
 public class Main extends JFrame {
-	 KhachHangPanel khp = new KhachHangPanel();
-	 KhachHangController khController = new KhachHangController(khp);
+	 private KhachHangPanel khp ;
+	private KhachHangController khController;
+	 private NhanVienPanel nvp;
+	 
+	
+	 
+	 
+	 
 	private CardLayout cardLayout;
 	private JPanel content;
 	String[] khachHangOptions = null;
@@ -41,12 +47,7 @@ public class Main extends JFrame {
 		    "Tra cứu khách hàng"
 		};
 
-		String[] nhanVienOptions = {
-		    "Thêm nhân viên",
-		    "Xóa nhân viên",
-		    "Sửa thông tin",
-		    "Phân quyền"
-		};
+		String[] nhanVienOptions = null;
 
 		String[] chuyenTauOptions = {
 		    "Thêm chuyến",
@@ -199,6 +200,17 @@ public class Main extends JFrame {
 	
 	public Main()
 	{
+		  // 🔥 TẠO OBJECT
+	    khp = new KhachHangPanel();
+	    khController = new KhachHangController(khp);
+
+	    // 🔥 NỐI MVC
+	    khp.setController(khController);
+		
+	    nvp = new NhanVienPanel();
+	    
+	    
+		
 		setTitle("RailTicket Pro");
 		setSize(1400,800);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -224,7 +236,7 @@ public class Main extends JFrame {
         JButton btnKhachHang = createNavButton("Quản lí khách hàng", "img/group-fill.png", khachHangOptions);
         JButton btnVe = createNavButton("Quản lí vé", "img/ticket-fill.png", veOptions);
         JButton btnHoaDon = createNavButton("Hóa đơn", "img/bill-line.png", hoaDonOptions);
-        JButton btnTraCuu = createNavButton("Quản lí Thuế", "img/seo-fill.png", traCuuOptions);
+        JButton btnThue = createNavButton("Quản lí Thuế", "img/seo-fill.png", traCuuOptions);
         JButton btnNhanVien = createNavButton("Quản lý nhân viên", "img/id-card-line.png", nhanVienOptions);
         JButton btnChuyenTau = createNavButton("Quản lí chuyến tàu", "img/subway.png", chuyenTauOptions);
         JButton btnKhuyenMai = createNavButton("Quản lí khuyến mãi", "img/discount.png", khuyenMaiOptions);
@@ -239,7 +251,7 @@ public class Main extends JFrame {
         menuPanel.add(Box.createVerticalStrut(5));
         menuPanel.add(btnHoaDon);
         menuPanel.add(Box.createVerticalStrut(5));
-        menuPanel.add(btnTraCuu);
+        menuPanel.add(btnThue);
         menuPanel.add(Box.createVerticalStrut(5));
         menuPanel.add(btnNhanVien);
         menuPanel.add(Box.createVerticalStrut(5));
@@ -279,15 +291,21 @@ public class Main extends JFrame {
         content = new JPanel(cardLayout);
         content.add(new DashboardPanel(), "dashboard");
         content.add(khp, "khachhang");
-        content.add(new BanVePanel(),"banve");
+        content.add(nvp,"nhanvien");
+        content.add(new VeTauPanel(),"banve");
         content.add(new HoaDonPanel(),"hoadon");
-        
-        
+        content.add(new KhuyenMaiPanel(),"khuyenmai");
+        content.add(new ChuyenTauPanel(),"chuyentau");
+        content.add(new ThuePanel(),"thue");
         // ===== EVENT =====
         btnDashboard.addActionListener(e -> show("dashboard"));
         btnKhachHang.addActionListener(e -> show("khachhang"));
+        btnNhanVien.addActionListener(e-> show("nhanvien"));
         btnVe.addActionListener(e-> show("banve"));
         btnHoaDon.addActionListener(e-> show("hoadon"));
+        btnKhuyenMai.addActionListener(e-> show("khuyenmai"));
+        btnChuyenTau.addActionListener(e->show("chuyentau"));
+        btnThue.addActionListener(e->show("thue"));
         add(content, BorderLayout.CENTER);
         show("dashboard");
 	}
@@ -340,17 +358,22 @@ public class Main extends JFrame {
         cardLayout.show(content, name);
     }
 
-    public static void main(String[] args) {
-    	try {
-    		UIManager.setLookAndFeel(new FlatMacLightLaf());
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-    	
-    	
-        new Main().setVisible(true);
-    }
+//    public static void main(String[] args) {
+//    	
+//    	
+//    	
+//    	
+//    	
+//    	try {
+//    		UIManager.setLookAndFeel(new FlatMacLightLaf());
+//			
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//    	
+//    	
+//        new Main().setVisible(true);
+//    }
 	
 	
 	

@@ -1,11 +1,14 @@
 package GUI;
 
-import com.formdev.flatlaf.FlatDarkLaf;
-
 import javax.swing.*;
 import java.awt.*;
 
 public class LoginPanel extends JFrame {
+
+    // Khai báo biến ở đây để Controller có thể lấy dữ liệu
+    private JTextField txtUser;
+    private JPasswordField txtPass;
+    private JButton btnLogin;
 
     public LoginPanel() {
         setTitle("Login");
@@ -28,7 +31,7 @@ public class LoginPanel extends JFrame {
         panel.add(new JLabel("Username:"), gbc);
 
         gbc.gridx = 1;
-        JTextField txtUser = new JTextField(15);
+        txtUser = new JTextField(15);
         panel.add(txtUser, gbc);
 
         // Password
@@ -37,7 +40,7 @@ public class LoginPanel extends JFrame {
         panel.add(new JLabel("Password:"), gbc);
 
         gbc.gridx = 1;
-        JPasswordField txtPass = new JPasswordField(15);
+        txtPass = new JPasswordField(15);
         panel.add(txtPass, gbc);
 
         // Button
@@ -45,23 +48,16 @@ public class LoginPanel extends JFrame {
         gbc.gridy = 2;
         gbc.gridwidth = 2;
 
-        JButton btnLogin = new JButton("Login");
+        btnLogin = new JButton("Login");
         panel.add(btnLogin, gbc);
 
         add(panel);
     }
 
-    public static void main(String[] args) {
-        // Bật FlatLaf
-        FlatDarkLaf.setup();
-
-        // Custom UI (cho đẹp hơn)
-        UIManager.put("Button.arc", 20);
-        UIManager.put("Component.arc", 15);
-        UIManager.put("TextComponent.arc", 10);
-
-        SwingUtilities.invokeLater(() -> {
-            new LoginPanel().setVisible(true);
-        });
-    }
+    // =========================================
+    // THÊM 3 HÀM GETTER NÀY CHO CONTROLLER
+    // =========================================
+    public JTextField getTxtUser() { return txtUser; }
+    public JPasswordField getTxtPass() { return txtPass; }
+    public JButton getBtnLogin() { return btnLogin; }
 }

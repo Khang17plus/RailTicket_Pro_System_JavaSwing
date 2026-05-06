@@ -1,10 +1,11 @@
 package GUI;
 
 import javax.swing.*;
+
+import Utils.SessionManager;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-
-
+import Entity.TaiKhoan;
 
 public class Header extends JPanel {
 	 String UserName ="Nguyễn Hoàng A";
@@ -15,6 +16,9 @@ public class Header extends JPanel {
 	 
 	 
     public Header() {
+    	
+    	TaiKhoan tk = SessionManager.getInstance().getTaiKhoanDangNhap();
+    	
     	// panel 
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(0, 70));

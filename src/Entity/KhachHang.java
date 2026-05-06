@@ -1,5 +1,6 @@
 package Entity;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class KhachHang {
@@ -9,9 +10,9 @@ public class KhachHang {
     private String soDienThoai;
     private String email;
     private LocalDateTime ngayDangKy;
-
-    // Constructor rỗng
+   
     public KhachHang() {
+       
     }
 
     // Constructor đầy đủ

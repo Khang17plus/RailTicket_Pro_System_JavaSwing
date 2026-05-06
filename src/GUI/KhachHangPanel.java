@@ -7,12 +7,21 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 import com.formdev.flatlaf.FlatLightLaf;
 
+import Controller.KhachHangController;
 import DAO.KhachHangDAO;
 import Entity.KhachHang;
 //import sun.security.ec.point.ProjectivePoint;
+
+
 public class KhachHangPanel extends JPanel {
+	private KhachHangController controller;
+	private Component component = new Component();
+	
 	 private String[] khachHangOptions = {
 		        "Thêm khách hàng",
 		        "Xóa khách hàng",
@@ -22,6 +31,11 @@ public class KhachHangPanel extends JPanel {
     private JTable table;
     private DefaultTableModel tableModel;
     
+    
+   public void setController(KhachHangController controller) {
+	   this.controller = controller;
+   }
+   
     
     public JButton createButtonExcel(String Cmt) {
     	JButton btn = new JButton(Cmt);
@@ -295,63 +309,82 @@ public class KhachHangPanel extends JPanel {
     }
     
     
- // Thêm khách hàng
+    
+    
+    
     private void themKhachHang() {
-        JDialog dialog = new JDialog();
-        dialog.setTitle("Thêm khách hàng");
-        dialog.setSize(400, 350);
-        dialog.setLocationRelativeTo(null);
-        dialog.setLayout(new FlowLayout());
+        // 1. Chuẩn bị mảng Label và Field
+        // Thêm "Mã Khách Hàng" nếu DB của bạn không tự tăng (Identity). Nếu tự tăng thì bỏ chữ Mã KH đi nhé.
+        String[] labels = {"Mã Khách Hàng", "Họ và Tên", "Số CCCD", "Số Điện Thoại", "Địa chỉ Email"};
+        JTextField[] fields = new JTextField[labels.length];
+        for (int i = 0; i < fields.length; i++) {
+            fields[i] = new JTextField();
+        }
+
+        // 2. Chuẩn bị nút bấm
+        JButton btnCancel = new JButton("Hủy bỏ");
         
-        JLabel lbMa = new JLabel("Mã KH:");
-        JTextField txtMa = new JTextField(20);
-        
-        JLabel lbTen = new JLabel("Họ tên:");
-        JTextField txtTen = new JTextField(20);
-        
-        JLabel lbCccd = new JLabel("CCCD:");
-        JTextField txtCccd = new JTextField(20);
-        
-        JLabel lbSdt = new JLabel("SĐT:");
-        JTextField txtSdt = new JTextField(20);
-        
-        JLabel lbEmail = new JLabel("Email:");
-        JTextField txtEmail = new JTextField(20);
-        
-        JButton btnSave = new JButton("Lưu");
-        JButton btnCancel = new JButton("Hủy");
-        
-        dialog.add(lbMa);
-        dialog.add(txtMa);
-        dialog.add(lbTen);
-        dialog.add(txtTen);
-        dialog.add(lbCccd);
-        dialog.add(txtCccd);
-        dialog.add(lbSdt);
-        dialog.add(txtSdt);
-        dialog.add(lbEmail);
-        dialog.add(txtEmail);
-        dialog.add(btnSave);
-        dialog.add(btnCancel);
-        
-        btnSave.addActionListener(ev -> {
-            String ma = txtMa.getText();
-            String ten = txtTen.getText();
-            String cccd = txtCccd.getText();
-            String sdt = txtSdt.getText();
-            String email = txtEmail.getText();
-            String ngayDK = java.time.LocalDate.now().toString();
-            
-            tableModel.addRow(new Object[]{ma, ten, cccd, sdt, email, ngayDK});
-            JOptionPane.showMessageDialog(dialog, "Thêm thành công!");
-            dialog.dispose();
+        JButton btnSave = new JButton("Lưu Khách Hàng");
+
+        // 3. Gọi Component tái sử dụng để tạo Form
+        // Lưu ý: Đảm bảo class Component của bạn không gọi setVisible(true) trong Constructor nữa nhé, nếu không nó sẽ tự nhảy ra 1 cái frame test đấy.
+        JDialog dialog = component.createDinamicForm(
+            "Thêm Khách Hàng Mới", 
+            "Nhập Thông Tin", 
+            "Vui lòng điền đầy đủ các thông tin bên dưới", 
+            labels, fields, new JButton[]{btnCancel, btnSave}
+        );
+
+        // 4. Bắt sự kiện Hủy
+        btnCancel.addActionListener(e -> dialog.dispose());
+
+        // 5. BẮT SỰ KIỆN LƯU VÀ ĐẨY XUỐNG CONTROLLER
+        btnSave.addActionListener(e -> {
+            // Lấy dữ liệu từ các ô nhập
+            String maKH = fields[0].getText().trim();
+            String tenKH = fields[1].getText().trim();
+            String cccd = fields[2].getText().trim();
+            String sdt = fields[3].getText().trim();
+            String email = fields[4].getText().trim();
+
+            // Validate cơ bản: Không được để trống
+            if (maKH.isEmpty() || tenKH.isEmpty() || sdt.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "Vui lòng nhập đủ Mã KH, Tên và SĐT!", "Lỗi", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // Tạo đối tượng Entity KhachHang (Ngày đăng ký lấy ngày hiện tại)
+            // Lưu ý: Constructor này phải khớp với class Entity.KhachHang của bạn
+            LocalDateTime ngayHienTai =  LocalDateTime.now();
+            KhachHang khNew = new KhachHang(maKH, tenKH, cccd, sdt, email, ngayHienTai);
+
+            // GỌI CONTROLLER ĐỂ XỬ LÝ LƯU (Flow chính nằm ở đây)
+            if (controller != null) {
+                boolean isSuccess = controller.themKhachHang(khNew); // Phương thức này ta sẽ viết ở Bước 2
+                
+                if (isSuccess) {
+                    JOptionPane.showMessageDialog(dialog, "Thêm khách hàng thành công!");
+                    
+                    // Cập nhật lại giao diện bảng (Add trực tiếp dòng mới vào bảng cho nhanh, đỡ phải load lại DB)
+                    tableModel.addRow(new Object[]{
+                        khNew.getMaKH(), khNew.getTenKH(), khNew.getCccd(), 
+                        khNew.getSoDienThoai(), khNew.getEmail(), khNew.getNgayDangKy()
+                    });
+                    
+                    dialog.dispose(); // Tắt form
+                } else {
+                    JOptionPane.showMessageDialog(dialog, "Thêm thất bại! Trùng mã KH hoặc lỗi hệ thống.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                }
+            } else {
+                JOptionPane.showMessageDialog(dialog, "Chưa khởi tạo Controller!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
         });
-        
-        btnCancel.addActionListener(ev -> dialog.dispose());
+
         dialog.setVisible(true);
     }
-
-    // Xóa khách hàng
+    
+     
+    //óa khách hàng
     private void xoaKhachHang() {
         int selectedRow = table.getSelectedRow();
         if (selectedRow == -1) {

@@ -8,17 +8,17 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
 
-import Entity.NhanVien; // Import Entity NhanVien
+import Entity.Tau; // Import Entity Tau
 
-public class NhanVienPanel extends JPanel {
+public class ChuyenTauPanel extends JPanel {
     
     private Component component = new Component();
     
-    private String[] nhanVienOptions = {
-        "Thêm nhân viên",
-        "Xóa nhân viên",
+    private String[] tauOptions = {
+        "Thêm tàu mới",
+        "Xóa tàu",
         "Sửa thông tin", 
-        "Tra cứu nhân viên"
+        "Tra cứu tàu"
     };
     
     private JTable table;
@@ -74,7 +74,7 @@ public class NhanVienPanel extends JPanel {
         return card;
     }
 
-    public NhanVienPanel() {
+    public ChuyenTauPanel() {
         setLayout(new BorderLayout());
         setBackground(new Color(245, 247, 250));
 
@@ -89,9 +89,10 @@ public class NhanVienPanel extends JPanel {
         headerL.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         JPanel headerR = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
 
-        JPanel cardNV = createCardstatistical("img/user2.png", "Tổng nhân sự ", 45);
-        JPanel cardNVmoi = createCardstatistical("img/user2.png", "Nhân viên mới  ", 3);
-        JPanel cardNVMua = createCardstatistical("img/user2.png", "Đang làm việc ", 42);
+        // Cập nhật card thống kê cho Tàu
+        JPanel cardTongTau = createCardstatistical("img/user2.png", "Tổng số tàu ", 25);
+        JPanel cardHoatDong = createCardstatistical("img/user2.png", "Đang hoạt động  ", 20);
+        JPanel cardBaoTri = createCardstatistical("img/user2.png", "Đang bảo trì ", 5);
 
         JPanel actionPanel = new JPanel(new BorderLayout());
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
@@ -114,14 +115,14 @@ public class NhanVienPanel extends JPanel {
         actionPanel.add(searchPanel, BorderLayout.WEST);
         actionPanel.add(rightPanel, BorderLayout.CENTER);
 
-        headerR.add(cardNVMua);
-        headerR.add(cardNVmoi);
-        headerR.add(cardNV);
+        headerR.add(cardBaoTri);
+        headerR.add(cardHoatDong);
+        headerR.add(cardTongTau);
 
-        JLabel title = new JLabel("Quản lý nhân viên");
+        JLabel title = new JLabel("Quản lý đoàn tàu");
         title.setFont(new Font("Arial", Font.BOLD, 22));
 
-        JLabel sub = new JLabel("Quản lý thông tin và trạng thái nhân sự trong hệ thống");
+        JLabel sub = new JLabel("Quản lý danh sách tàu, loại tàu và trạng thái hoạt động trong hệ thống Metro");
         sub.setForeground(Color.GRAY);
         sub.setFont(new Font("Arial", Font.PLAIN, 12));
 
@@ -148,8 +149,8 @@ public class NhanVienPanel extends JPanel {
                 BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
 
-        // Format Cột cho Nhân Viên
-        String[] columns = {"Mã NV", "Họ và tên", "Chức vụ", "Số điện thoại", "Trạng thái"};
+        // Format Cột cho Tàu
+        String[] columns = {"Mã Tàu", "Tên Tàu", "Loại Tàu", "Trạng Thái"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -181,13 +182,11 @@ public class NhanVienPanel extends JPanel {
         add(main, BorderLayout.CENTER);
     }
 
-    public void setData(List<NhanVien> list) {
+    public void setData(List<Tau> list) {
         tableModel.setRowCount(0);
-        for (NhanVien nv : list) {
-            String trangThaiStr = nv.isTrangThai() ? "Đang làm việc" : "Nghỉ việc";
+        for (Tau t : list) {
             tableModel.addRow(new Object[] {
-                nv.getMaNV(), nv.getTenNV(), nv.getChucVu(),
-                nv.getSoDienThoai(), trangThaiStr
+                t.getMaTau(), t.getTenTau(), t.getLoaiTau(), t.getTrangThai()
             });
         }
     }
@@ -199,22 +198,22 @@ public class NhanVienPanel extends JPanel {
     public List<JMenuItem> getMenuOption() {
         List<JMenuItem> submenu = new ArrayList<>();
         
-        for (String option : nhanVienOptions) {
+        for (String option : tauOptions) {
             JMenuItem it = new JMenuItem(option);
             it.addActionListener(e -> {
                 String text = ((JMenuItem) e.getSource()).getText();
                 switch (text) {
-                    case "Thêm nhân viên":
-                        themNhanVien();
+                    case "Thêm tàu mới":
+                        themTau();
                         break;
-                    case "Xóa nhân viên":
-                        xoaNhanVien();
+                    case "Xóa tàu":
+                        xoaTau();
                         break;
                     case "Sửa thông tin":
-                        suaNhanVien();
+                        suaTau();
                         break;
-                    case "Tra cứu nhân viên":
-                        traCuuNhanVien();
+                    case "Tra cứu tàu":
+                        traCuuTau();
                         break;
                     default:
                         JOptionPane.showMessageDialog(null, "Chọn: " + text);
@@ -225,120 +224,113 @@ public class NhanVienPanel extends JPanel {
         return submenu;
     }
 
-    // Thêm nhân viên
-    private void themNhanVien() {
-        String[] labels = {"Mã Nhân Viên", "Họ và Tên", "Chức Vụ", "Số Điện Thoại", "Trạng Thái (Đang làm/Nghỉ)"};
+    // Thêm tàu
+    private void themTau() {
+        String[] labels = {"Mã Tàu", "Tên Tàu", "Loại Tàu (Cao tốc/Thường)", "Trạng Thái (Hoạt động/Bảo trì)"};
         JTextField[] fields = new JTextField[labels.length];
         for (int i = 0; i < fields.length; i++) {
             fields[i] = new JTextField();
         }
 
         JButton btnCancel = new JButton("Hủy bỏ");
-        JButton btnSave = new JButton("Lưu Nhân Viên");
+        JButton btnSave = new JButton("Lưu Tàu");
 
         JDialog dialog = component.createDinamicForm(
-            "Thêm Nhân Viên Mới", 
-            "Nhập Thông Tin", 
-            "Vui lòng điền đầy đủ thông tin nhân sự", 
+            "Thêm Tàu Mới", 
+            "Nhập Thông Tin Tàu", 
+            "Vui lòng điền đầy đủ dữ liệu đoàn tàu", 
             labels, fields, new JButton[]{btnCancel, btnSave}
         );
 
         btnCancel.addActionListener(e -> dialog.dispose());
 
         btnSave.addActionListener(e -> {
-            String maNV = fields[0].getText().trim();
-            String tenNV = fields[1].getText().trim();
-            String chucVu = fields[2].getText().trim();
-            String sdt = fields[3].getText().trim();
-            String trangThai = fields[4].getText().trim();
+            String maTau = fields[0].getText().trim();
+            String tenTau = fields[1].getText().trim();
+            String loaiTau = fields[2].getText().trim();
+            String trangThai = fields[3].getText().trim();
 
-            if (maNV.isEmpty() || tenNV.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog, "Mã NV và Tên NV không được để trống!", "Lỗi", JOptionPane.WARNING_MESSAGE);
+            if (maTau.isEmpty() || tenTau.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "Mã tàu và Tên tàu không được để trống!", "Lỗi", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
             // Mock Data - Thêm thẳng vào bảng không cần DB
-            tableModel.addRow(new Object[]{maNV, tenNV, chucVu, sdt, trangThai});
-            JOptionPane.showMessageDialog(dialog, "Thêm nhân viên thành công!");
+            tableModel.addRow(new Object[]{maTau, tenTau, loaiTau, trangThai});
+            JOptionPane.showMessageDialog(dialog, "Thêm tàu thành công!");
             dialog.dispose();
         });
 
         dialog.setVisible(true);
     }
 
-    // Xóa nhân viên
-    private void xoaNhanVien() {
+    // Xóa tàu
+    private void xoaTau() {
         int selectedRow = table.getSelectedRow();
         if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn nhân viên cần xóa!");
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn tàu cần xóa!");
             return;
         }
 
-        int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xóa nhân viên này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+        int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xóa đoàn tàu này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
             tableModel.removeRow(selectedRow);
             JOptionPane.showMessageDialog(this, "Xóa thành công!");
         }
     }
 
-    // Sửa thông tin nhân viên
-    private void suaNhanVien() {
+    // Sửa thông tin tàu
+    private void suaTau() {
         int selectedRow = table.getSelectedRow();
         if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn nhân viên cần sửa!");
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn tàu cần sửa!");
             return;
         }
 
-        // Lấy dữ liệu cũ
-        String maCu = tableModel.getValueAt(selectedRow, 0).toString();
-        String tenCu = tableModel.getValueAt(selectedRow, 1).toString();
-        String chucVuCu = tableModel.getValueAt(selectedRow, 2).toString();
-        String sdtCu = tableModel.getValueAt(selectedRow, 3).toString();
-        String trangThaiCu = tableModel.getValueAt(selectedRow, 4).toString();
+        // Lấy dữ liệu cũ từ Table
+        String maTau = tableModel.getValueAt(selectedRow, 0).toString();
+        String tenTau = tableModel.getValueAt(selectedRow, 1).toString();
+        String loaiTau = tableModel.getValueAt(selectedRow, 2).toString();
+        String trangThai = tableModel.getValueAt(selectedRow, 3).toString();
 
         JDialog dialog = new JDialog();
-        dialog.setTitle("Sửa thông tin nhân viên");
-        dialog.setSize(400, 350);
+        dialog.setTitle("Sửa thông tin tàu");
+        dialog.setSize(400, 300);
         dialog.setLocationRelativeTo(null);
         dialog.setLayout(new FlowLayout());
 
-        JLabel lbMa = new JLabel("Mã NV:");
-        JTextField txtMa = new JTextField(maCu, 20);
-        txtMa.setEditable(false);
+        JLabel lbMaTau = new JLabel("Mã Tàu:");
+        JTextField txtMaTau = new JTextField(maTau, 25);
+        txtMaTau.setEditable(false); // Không cho sửa mã gốc
 
-        JLabel lbTen = new JLabel("Họ tên:");
-        JTextField txtTen = new JTextField(tenCu, 20);
+        JLabel lbTenTau = new JLabel("Tên Tàu:");
+        JTextField txtTenTau = new JTextField(tenTau, 25);
 
-        JLabel lbChucVu = new JLabel("Chức vụ:");
-        JTextField txtChucVu = new JTextField(chucVuCu, 20);
+        JLabel lbLoaiTau = new JLabel("Loại Tàu:");
+        JTextField txtLoaiTau = new JTextField(loaiTau, 25);
 
-        JLabel lbSdt = new JLabel("SĐT:");
-        JTextField txtSdt = new JTextField(sdtCu, 20);
-
-        JLabel lbTrangThai = new JLabel("Trạng thái:");
-        JTextField txtTrangThai = new JTextField(trangThaiCu, 20);
+        JLabel lbTrangThai = new JLabel("Trạng Thái:");
+        JTextField txtTrangThai = new JTextField(trangThai, 25);
 
         JButton btnUpdate = new JButton("Cập nhật");
         JButton btnCancel = new JButton("Hủy");
 
-        dialog.add(lbMa);
-        dialog.add(txtMa);
-        dialog.add(lbTen);
-        dialog.add(txtTen);
-        dialog.add(lbChucVu);
-        dialog.add(txtChucVu);
-        dialog.add(lbSdt);
-        dialog.add(txtSdt);
+        dialog.add(lbMaTau);
+        dialog.add(txtMaTau);
+        dialog.add(lbTenTau);
+        dialog.add(txtTenTau);
+        dialog.add(lbLoaiTau);
+        dialog.add(txtLoaiTau);
         dialog.add(lbTrangThai);
         dialog.add(txtTrangThai);
+        
         dialog.add(btnUpdate);
         dialog.add(btnCancel);
 
         btnUpdate.addActionListener(ev -> {
-            tableModel.setValueAt(txtTen.getText(), selectedRow, 1);
-            tableModel.setValueAt(txtChucVu.getText(), selectedRow, 2);
-            tableModel.setValueAt(txtSdt.getText(), selectedRow, 3);
-            tableModel.setValueAt(txtTrangThai.getText(), selectedRow, 4);
+            tableModel.setValueAt(txtTenTau.getText(), selectedRow, 1);
+            tableModel.setValueAt(txtLoaiTau.getText(), selectedRow, 2);
+            tableModel.setValueAt(txtTrangThai.getText(), selectedRow, 3);
 
             JOptionPane.showMessageDialog(dialog, "Cập nhật thành công!");
             dialog.dispose();
@@ -348,9 +340,9 @@ public class NhanVienPanel extends JPanel {
         dialog.setVisible(true);
     }
 
-    // Tra cứu nhân viên
-    private void traCuuNhanVien() {
-        String keyword = JOptionPane.showInputDialog(this, "Nhập tên hoặc Mã NV cần tìm:");
+    // Tra cứu tàu
+    private void traCuuTau() {
+        String keyword = JOptionPane.showInputDialog(this, "Nhập Tên Tàu hoặc Mã Tàu cần tìm:");
         JOptionPane.showMessageDialog(table, "Đã ghi nhận từ khóa: " + keyword + " (Chưa kết nối DB)");
     }
 }

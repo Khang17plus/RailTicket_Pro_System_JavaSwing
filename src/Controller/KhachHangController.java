@@ -1,12 +1,12 @@
 package Controller;
 import GUI.KhachHangPanel;
 
+
 import java.util.ArrayList;
 import java.util.List;
 
 import DAO.KhachHangDAO;
 import Entity.KhachHang;
-
 
 public class KhachHangController {
 	
@@ -14,7 +14,6 @@ public class KhachHangController {
 	private KhachHangDAO dao;
 	
 	public KhachHangController(KhachHangPanel view ) {
-		
 		this.view = view;
         this.dao = new KhachHangDAO();
 		
@@ -26,8 +25,18 @@ public class KhachHangController {
 		view.setData(list);
 	}
 	
+	public boolean themKhachHang(KhachHang kh) {
+		boolean result = dao.insert(kh);
+		if (result) {
+			System.out.println("them thanh cong");
+		}
+		return result;
+		
+	}
+	
 	
 	
 	
 
+	
 }
