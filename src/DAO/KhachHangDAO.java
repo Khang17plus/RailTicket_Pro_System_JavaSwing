@@ -124,4 +124,41 @@ public class KhachHangDAO {
 
         return kh;
     }
+ // Tìm kiếm khách hàng (Chỉ theo CCCD hoặc SĐT)
+    public List<KhachHang> searchKhachHang(String keyword) {
+        List<KhachHang> list = new ArrayList<>();
+        
+        // Câu SQL chỉ sử dụng điều kiện cho cccd và soDienThoai
+        String sql = "SELECT * FROM KhachHang WHERE cccd LIKE ? OR soDienThoai LIKE ?";
+        
+        try (Connection con = ConnectDB.getInstance().getConnection();
+             PreparedStatement pst = con.prepareStatement(sql)) {
+             
+            String searchPattern = "%" + keyword + "%";
+            
+            // Bây giờ chỉ còn 2 dấu ? nên ta chỉ setString 2 lần
+            pst.setString(1, searchPattern); // cho cccd
+            pst.setString(2, searchPattern); // cho soDienThoai
+            
+            try (ResultSet rs = pst.executeQuery()) {
+                while (rs.next()) {
+                    java.time.LocalDateTime ngayDK = (rs.getTimestamp("ngayDangKy") != null) 
+                            ? rs.getTimestamp("ngayDangKy").toLocalDateTime() : null;
+                            
+                    KhachHang kh = new KhachHang(
+                        rs.getString("maKH"), 
+                        rs.getString("tenKH"), 
+                        rs.getString("cccd"),
+                        rs.getString("soDienThoai"), 
+                        rs.getString("email"), 
+                        ngayDK
+                    );
+                    list.add(kh);
+                }
+            }
+        } catch (java.sql.SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
 }

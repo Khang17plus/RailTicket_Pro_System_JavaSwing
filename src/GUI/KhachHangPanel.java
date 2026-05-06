@@ -130,6 +130,7 @@ public class KhachHangPanel extends JPanel {
         JTextField txtSearch = new JTextField();
         txtSearch.setPreferredSize(new Dimension(400, 36));
         txtSearch.putClientProperty("FlatLaf.style", "arc:10");
+        
         JButton btnSearch = createButtonExcel("Tìm Kiếm");
         
         
@@ -384,92 +385,114 @@ public class KhachHangPanel extends JPanel {
     }
     
      
-    //óa khách hàng
+ // ----------------------------------------------------
+    // Xóa khách hàng
     private void xoaKhachHang() {
         int selectedRow = table.getSelectedRow();
         if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn khách hàng cần xóa!");
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn khách hàng cần xóa!", "Thông báo", JOptionPane.WARNING_MESSAGE);
             return;
         }
         
-        int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xóa?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+        // Lấy mã khách hàng từ cột đầu tiên (Cột 0)
+        String maKH = tableModel.getValueAt(selectedRow, 0).toString();
+        
+        int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xóa khách hàng " + maKH + "?", "Xác nhận", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
-            tableModel.removeRow(selectedRow);
-            JOptionPane.showMessageDialog(this, "Xóa thành công!");
+            // Đẩy xuống Controller xử lý
+            if (controller != null && controller.xoaKhachHang(maKH)) {
+                tableModel.removeRow(selectedRow); // Xóa trên giao diện
+                JOptionPane.showMessageDialog(this, "Xóa thành công!");
+            } else {
+                JOptionPane.showMessageDialog(this, "Xóa thất bại! Khách hàng có thể đã mua vé.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 
+    // ----------------------------------------------------
     // Sửa khách hàng
     private void suaKhachHang() {
         int selectedRow = table.getSelectedRow();
         if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn khách hàng cần sửa!");
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn khách hàng cần sửa!", "Thông báo", JOptionPane.WARNING_MESSAGE);
             return;
         }
         
-        // Lấy dữ liệu cũ
+        // Lấy dữ liệu cũ từ Table
         String maCu = tableModel.getValueAt(selectedRow, 0).toString();
         String tenCu = tableModel.getValueAt(selectedRow, 1).toString();
         String cccdCu = tableModel.getValueAt(selectedRow, 2).toString();
         String sdtCu = tableModel.getValueAt(selectedRow, 3).toString();
         String emailCu = tableModel.getValueAt(selectedRow, 4).toString();
         
-        // Tạo dialog sửa
-        JDialog dialog = new JDialog();
-        dialog.setTitle("Sửa khách hàng");
-        dialog.setSize(400, 350);
-        dialog.setLocationRelativeTo(null);
-        dialog.setLayout(new FlowLayout());
+        // Dùng lại class Component để tạo Form cho đồng bộ
+        String[] labels = {"Họ và Tên", "Số CCCD", "Số Điện Thoại", "Địa chỉ Email"};
+        JTextField[] fields = new JTextField[labels.length];
         
-        JLabel lbMa = new JLabel("Mã KH:");
-        JTextField txtMa = new JTextField(maCu, 20);
-        txtMa.setEditable(false);
-        
-        JLabel lbTen = new JLabel("Họ tên:");
-        JTextField txtTen = new JTextField(tenCu, 20);
-        
-        JLabel lbCccd = new JLabel("CCCD:");
-        JTextField txtCccd = new JTextField(cccdCu, 20);
-        
-        JLabel lbSdt = new JLabel("SĐT:");
-        JTextField txtSdt = new JTextField(sdtCu, 20);
-        
-        JLabel lbEmail = new JLabel("Email:");
-        JTextField txtEmail = new JTextField(emailCu, 20);
-        
-        JButton btnUpdate = new JButton("Cập nhật");
-        JButton btnCancel = new JButton("Hủy");
-        
-        dialog.add(lbMa);
-        dialog.add(txtMa);
-        dialog.add(lbTen);
-        dialog.add(txtTen);
-        dialog.add(lbCccd);
-        dialog.add(txtCccd);
-        dialog.add(lbSdt);
-        dialog.add(txtSdt);
-        dialog.add(lbEmail);
-        dialog.add(txtEmail);
-        dialog.add(btnUpdate);
-        dialog.add(btnCancel);
-        
-        btnUpdate.addActionListener(ev -> {
-            tableModel.setValueAt(txtTen.getText(), selectedRow, 1);
-            tableModel.setValueAt(txtCccd.getText(), selectedRow, 2);
-            tableModel.setValueAt(txtSdt.getText(), selectedRow, 3);
-            tableModel.setValueAt(txtEmail.getText(), selectedRow, 4);
-            
-            JOptionPane.showMessageDialog(dialog, "Cập nhật thành công!");
-            dialog.dispose();
-        });
+        fields[0] = new JTextField(tenCu);
+        fields[1] = new JTextField(cccdCu);
+        fields[2] = new JTextField(sdtCu);
+        fields[3] = new JTextField(emailCu);
+
+        JButton btnCancel = new JButton("Hủy bỏ");
+        JButton btnUpdate = new JButton("Cập Nhật");
+
+        JDialog dialog = component.createDinamicForm(
+            "Sửa Thông Tin", "Mã KH: " + maCu, 
+            "Cập nhật thông tin khách hàng", 
+            labels, fields, new JButton[]{btnCancel, btnUpdate}
+        );
         
         btnCancel.addActionListener(ev -> dialog.dispose());
+
+        btnUpdate.addActionListener(ev -> {
+            String tenMoi = fields[0].getText().trim();
+            String cccdMoi = fields[1].getText().trim();
+            String sdtMoi = fields[2].getText().trim();
+            String emailMoi = fields[3].getText().trim();
+
+            if (tenMoi.isEmpty() || sdtMoi.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "Tên và SĐT không được để trống!", "Lỗi", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // Tạo đối tượng KhachHang với thông tin mới (Ngày ĐK giữ null, DB không đổi)
+            KhachHang khUpdate = new KhachHang(maCu, tenMoi, cccdMoi, sdtMoi, emailMoi, null);
+
+            // Đẩy xuống Controller
+            if (controller != null && controller.capNhatKhachHang(khUpdate)) {
+                // Cập nhật lại Table giao diện
+                tableModel.setValueAt(tenMoi, selectedRow, 1);
+                tableModel.setValueAt(cccdMoi, selectedRow, 2);
+                tableModel.setValueAt(sdtMoi, selectedRow, 3);
+                tableModel.setValueAt(emailMoi, selectedRow, 4);
+                
+                JOptionPane.showMessageDialog(dialog, "Cập nhật thành công!");
+                dialog.dispose();
+            } else {
+                JOptionPane.showMessageDialog(dialog, "Cập nhật thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        
         dialog.setVisible(true);
     }
 
-    // Tra cứu khách hàng
+    // ----------------------------------------------------
+    // Tra cứu (Tìm kiếm) khách hàng
     private void traCuuKhachHang() {
-        String keyword = JOptionPane.showInputDialog(this, "Nhập tên hoặc SĐT cần tìm:");
-        JOptionPane.showMessageDialog(table, "chưa hoàn thiện chức năng");
+        String keyword = JOptionPane.showInputDialog(this, "Nhập Tên, CCCD hoặc SĐT cần tìm:");
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            if (controller != null) {
+                controller.timKiemKhachHang(keyword.trim());
+            }
+        } else if (keyword != null && keyword.trim().isEmpty()) {
+            // Nếu để trống và ấn OK -> Load lại toàn bộ
+            if (controller != null) {
+                controller.loadDataToTable();
+            }
+        }
     }
+    
+
+   
 }

@@ -5,19 +5,36 @@ import javax.swing.*;
 import Utils.SessionManager;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+
+import Entity.NhanVien;
 import Entity.TaiKhoan;
 
 public class Header extends JPanel {
-	 String UserName ="Nguyễn Hoàng A";
-	 int typeUser  = 1;
-	 private String TypeUserToString(int type) {
-		 return (type ==1 ) ? "Quản Lý" :"Nhân viên" ;
-	 };
+	 
+	 TaiKhoan tk;
+	 NhanVien nv;
+	 
+	 public String getVaiTroText(TaiKhoan tk) {
+		    if ("ADMIN".equals(tk.getVaiTro())) {
+		        return "Quản lí";
+		    } else if ("STAFF".equals(tk.getVaiTro())) {
+		        return "Nhân viên";
+		    }
+		    return "Không xác định";
+		}
 	 
 	 
     public Header() {
     	
-    	TaiKhoan tk = SessionManager.getInstance().getTaiKhoanDangNhap();
+    	 tk = SessionManager.getInstance().getTaiKhoanDangNhap();
+    	 nv = SessionManager.getInstance().getNhanVien();
+    	String UserName = nv.getTenNV();
+    	 String vaiTro = "";
+    	    if (tk != null) {
+    	        vaiTro = getVaiTroText(tk);
+    	    } else {
+    	        vaiTro = "Không xác định";
+    	    }
     	
     	// panel 
         setLayout(new BorderLayout());
@@ -47,7 +64,7 @@ public class Header extends JPanel {
         
         JLabel lblUserInfo = new JLabel("<html><div style='text-align: right;'>"
                 + "<b style='color:#2f3542;'>" +UserName+"</b><br>"
-                + "<span style='font-size:9px; color:gray;'>"+TypeUserToString(typeUser)+"</span>"
+                + "<span style='font-size:9px; color:gray;'>"+vaiTro+"</span>"
                 + "</div></html>");
         
         

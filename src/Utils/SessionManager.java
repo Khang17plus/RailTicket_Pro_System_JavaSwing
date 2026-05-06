@@ -1,5 +1,6 @@
 package Utils;
 
+import Entity.NhanVien;
 import Entity.TaiKhoan;
 
 public class SessionManager {
@@ -16,6 +17,11 @@ public class SessionManager {
         }
         return instance;
     }
+    public void login(TaiKhoan tk, NhanVien nv) {
+        this.taiKhoanDangNhap = tk;
+        this.nhanVienHienTai = nv;
+    }
+    public NhanVien getNhanVien() { return nhanVienHienTai; }	
 
     // Lưu thông tin khi đăng nhập thành công
     public void setTaiKhoanDangNhap(TaiKhoan tk) {
@@ -29,6 +35,7 @@ public class SessionManager {
 
     // Xóa thông tin khi đăng xuất
     public void dangXuat() {
-        this.taiKhoanDangNhap = null;
+    	this.taiKhoanDangNhap = null;
+        this.nhanVienHienTai = null;
     }
 }

@@ -19,7 +19,10 @@ public class KhachHangController {
 		
         loadData();
 	}
-	
+	public void loadDataToTable() {
+        List<KhachHang> list = dao.getAll();
+        view.setData(list); // Gọi hàm setData bên KhachHangPanel
+    }
 	public void loadData() {
 		List<KhachHang> list = dao.getAll();
 		view.setData(list);
@@ -34,9 +37,18 @@ public class KhachHangController {
 		
 	}
 	
+	public boolean capNhatKhachHang(KhachHang kh) {
+        return dao.update(kh);
+    }
 	
+	public boolean xoaKhachHang(String maKH) {
+        return dao.delete(maKH);
+    }
 	
-	
+	public void timKiemKhachHang(String keyword) {
+        List<KhachHang> list = dao.searchKhachHang(keyword);
+        view.setData(list); // Cập nhật lại bảng với dữ liệu tìm được
+    }
 
 	
 }

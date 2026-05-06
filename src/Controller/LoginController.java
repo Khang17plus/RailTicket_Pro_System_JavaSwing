@@ -1,6 +1,8 @@
 package Controller;
 
+import DAO.NhanVienDAO;
 import DAO.TaiKhoanDAO;
+import Entity.NhanVien;
 import Entity.TaiKhoan;
 import GUI.LoginPanel;
 import Utils.SessionManager;
@@ -46,9 +48,12 @@ public class LoginController {
 
         // Gọi DAO kiểm tra trong CSDL
         TaiKhoan tk = dao.checkLogin(username, password);
+        
 
         if (tk != null) {
-            SessionManager.getInstance().setTaiKhoanDangNhap(tk);
+        	NhanVienDAO nvDao = new NhanVienDAO();
+            NhanVien nv = nvDao.getNhanVienTheoMa(tk.getMaNV());
+            SessionManager.getInstance().login(tk, nv);
             // 1. Tắt giao diện Đăng nhập
             view.dispose(); 
 
