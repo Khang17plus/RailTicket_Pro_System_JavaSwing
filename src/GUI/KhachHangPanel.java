@@ -26,7 +26,7 @@ public class KhachHangPanel extends JPanel {
 		        "Thêm khách hàng",
 		        "Xóa khách hàng",
 		        "Sửa thông tin", 
-		        "Tra cứu khách hàng"
+		      
 		    };
     private JTable table;
     private DefaultTableModel tableModel;
@@ -130,9 +130,19 @@ public class KhachHangPanel extends JPanel {
         JTextField txtSearch = new JTextField();
         txtSearch.setPreferredSize(new Dimension(400, 36));
         txtSearch.putClientProperty("FlatLaf.style", "arc:10");
-        
+        txtSearch.putClientProperty("JTextField.placeholderText", "Nhập SĐT hoặc CCCD...");
         JButton btnSearch = createButtonExcel("Tìm Kiếm");
         
+        btnSearch.addActionListener(e -> {
+            String keyword = txtSearch.getText().trim();
+            if (controller != null) {
+                if (!keyword.isEmpty()) {
+                    controller.timKiemKhachHang(keyword); // Gọi controller tìm kiếm
+                } else {
+                    controller.loadDataToTable(); // Nếu để trống thì load lại toàn bộ
+                }
+            }
+        });
         
         
         searchPanel.add(txtSearch);

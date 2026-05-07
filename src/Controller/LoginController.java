@@ -20,12 +20,13 @@ public class LoginController {
         this.view = view;
         this.dao = new TaiKhoanDAO();
 
-        // Lắng nghe sự kiện click nút Login
+        // Lắng nghe sự kiện click nút Login sữa ở đây để debug
         this.view.getBtnLogin().addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 thucHienDangNhap();
             }
+        	
         });
 
         // Bắt thêm sự kiện ấn phím Enter ở ô Password

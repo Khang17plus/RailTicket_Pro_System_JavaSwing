@@ -7,6 +7,7 @@ import com.formdev.flatlaf.themes.FlatMacLightLaf;
 import com.formdev.flatlaf.ui.FlatPopupMenuSeparatorUI;
 
 import Controller.KhachHangController;
+import Controller.TauVaToaController;
 
 import javax.swing.*;
 import java.awt.*;
@@ -15,11 +16,12 @@ import java.awt.event.MouseEvent;
 import java.sql.Time;
 import java.util.List;
 public class Main extends JFrame {
-	 private KhachHangPanel khp ;
+	private KhachHangPanel khp ;
 	private KhachHangController khController;
-	 private NhanVienPanel nvp;
+	private NhanVienPanel nvp;
 	 
-	
+	private TauVaToaPanel tauvatoa;
+	private TauVaToaController tauvatoacontroller;
 	 
 	 
 	 
@@ -74,7 +76,104 @@ public class Main extends JFrame {
 		    "Phản hồi"
 		};
 	
-	
+		private JButton createNavButton(String text, String iconURL, List<JMenuItem> subItems, String cardName) {
+			JButton btn = new JButton(text);
+		try {
+				
+				java.io.File imgFile = new java.io.File(iconURL);
+				if (imgFile.exists()) {
+					btn.setIcon(new ImageIcon(imgFile.getAbsolutePath()));
+					btn.setIconTextGap(15);
+				}
+				
+				
+			} catch (Exception e) {
+				// TODO: handle exception
+			}
+			
+			
+		    btn.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+		    btn.setContentAreaFilled(false);
+		    btn.setMaximumSize(new Dimension(Integer.MAX_VALUE,45));
+		    btn.setHorizontalAlignment(SwingConstants.LEFT);
+		    btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+		    btn.setForeground(Color.WHITE);
+		    
+		    
+		   
+		    
+		    
+
+		    JPopupMenu popup = new JPopupMenu();
+		    popup.setBackground(new Color(30,41,59,200));
+		    
+		    final boolean[] isHoverPopup = {false};
+		    
+		    Timer hideTimer = new Timer(100, e -> {
+				  if (!isHoverPopup[0]) {
+					  popup.setVisible(false);
+				  }
+				   
+				   
+			   });
+			   
+			   hideTimer.setRepeats(false);
+		    
+		  
+			   
+			   List<JMenuItem> listIT = subItems;
+			   for(JMenuItem item : listIT) {
+				   item.addActionListener(e -> show(cardName));
+				
+				   item.addMouseListener(new MouseAdapter() {
+						
+			    		public void mouseEntered(MouseEvent e) {
+			                isHoverPopup[0] = true;
+			                hideTimer.stop();
+			            };
+			            public void mouseExited(MouseEvent e) {
+			                isHoverPopup[0] = false;
+			                hideTimer.restart();
+			            }
+			           
+			    	
+			    	});
+				   item.setForeground(Color.WHITE);
+				   
+				   popup.add(item);
+			   }
+		   
+		    
+		   
+		  
+		    
+		    btn.addMouseListener(new MouseAdapter() {
+			public void mouseEntered(MouseEvent e) {
+				hideTimer.stop();;
+				if(!popup.isVisible()){
+		    	popup.show(btn,btn.getWidth()+15,0);
+		    	 	btn.setContentAreaFilled(true);
+		            btn.setBackground(new Color(51, 65, 85));
+		    }
+			}
+			
+			public void mouseExited(MouseEvent e ) {
+				hideTimer.restart();
+				btn.setContentAreaFilled(false);
+			}
+		    
+		    
+		    }
+		    );
+		    
+
+		    
+			
+			
+			
+		    return btn;
+		}
+		
 	private JButton createNavButton(String text, String iconURL, String[] subItems) {
 		JButton btn = new JButton(text);
 	try {
@@ -206,10 +305,12 @@ public class Main extends JFrame {
 
 	    // 🔥 NỐI MVC
 	    khp.setController(khController);
-		
 	    nvp = new NhanVienPanel();
 	    
 	    
+	    tauvatoa = new TauVaToaPanel();
+	    tauvatoacontroller = new TauVaToaController(tauvatoa);
+	    tauvatoa.setController(tauvatoacontroller);
 		
 		setTitle("RailTicket Pro");
 		setSize(1400,800);
@@ -238,6 +339,7 @@ public class Main extends JFrame {
         JButton btnHoaDon = createNavButton("Hóa đơn", "img/bill-line.png", hoaDonOptions);
         JButton btnThue = createNavButton("Quản lí Thuế", "img/seo-fill.png", traCuuOptions);
         JButton btnNhanVien = createNavButton("Quản lý nhân viên", "img/id-card-line.png", nhanVienOptions);
+        JButton btnTauVaToa = createNavButton("Quản lí Tàu Và Toa", "img/subway.png",tauvatoa.getMenuOption(),"tauvatoa" );
         JButton btnChuyenTau = createNavButton("Quản lí chuyến tàu", "img/subway.png", chuyenTauOptions);
         JButton btnKhuyenMai = createNavButton("Quản lí khuyến mãi", "img/discount.png", khuyenMaiOptions);
         JButton btnThongKe = createNavButton("Thống kê", "img/bar-chart-box-line.png", thongKeOptions);
@@ -254,6 +356,8 @@ public class Main extends JFrame {
         menuPanel.add(btnThue);
         menuPanel.add(Box.createVerticalStrut(5));
         menuPanel.add(btnNhanVien);
+        menuPanel.add(Box.createVerticalStrut(5));
+        menuPanel.add(btnTauVaToa);
         menuPanel.add(Box.createVerticalStrut(5));
         menuPanel.add(btnChuyenTau);
         menuPanel.add(Box.createVerticalStrut(5));
@@ -295,6 +399,7 @@ public class Main extends JFrame {
         content.add(new VeTauPanel(),"banve");
         content.add(new HoaDonPanel(),"hoadon");
         content.add(new KhuyenMaiPanel(),"khuyenmai");
+        content.add(tauvatoa, "tauvatoa");
         content.add(new ChuyenTauPanel(),"chuyentau");
         content.add(new ThuePanel(),"thue");
         // ===== EVENT =====
@@ -306,6 +411,7 @@ public class Main extends JFrame {
         btnKhuyenMai.addActionListener(e-> show("khuyenmai"));
         btnChuyenTau.addActionListener(e->show("chuyentau"));
         btnThue.addActionListener(e->show("thue"));
+        btnTauVaToa.addActionListener(e->show("tauvatoa"));
         add(content, BorderLayout.CENTER);
         show("dashboard");
 	}
