@@ -8,6 +8,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
+import java.io.File;
 
 import Controller.GaTauController;
 import Entity.GaTau;
@@ -123,7 +124,8 @@ public class GaTauPanel extends JPanel {
 
         JButton imports= createButtonExcel("Nhập file excel");
         JButton export = createButtonExcel("Xuất file excel");
-        
+        imports.addActionListener(e->importExcel());
+        export.addActionListener(e->exportExcel());
         rightPanel.add(export);
         rightPanel.add(imports);
         
@@ -241,6 +243,42 @@ public class GaTauPanel extends JPanel {
         return submenu;
     }
     
+    
+    // xuat 
+    
+    private void exportExcel() {
+        JFileChooser fc = new JFileChooser();
+        fc.setSelectedFile(new File("DanhSachGa.xlsx"));
+        fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Excel files (.xlsx)", "xlsx"));
+        if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            String path = fc.getSelectedFile().getAbsolutePath();
+            if (!path.endsWith(".xlsx")) path += ".xlsx";
+            // Lấy dữ liệu từ bảng hiện tại (nếu có) hoặc lấy tất cả từ DB
+            List<GaTau> currentData = getDataFromTable(); // cần viết hàm lấy dữ liệu từ table model
+            boolean success = controller.exportToExcel(path, currentData);
+            if (success) {
+                JOptionPane.showMessageDialog(this, "Xuất file thành công!");
+            } else {
+                JOptionPane.showMessageDialog(this, "Xuất file thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+    
+    // lay du lieu tu form 
+    public List<GaTau> getDataFromTable() {
+        List<GaTau> list = new ArrayList<>();
+        DefaultTableModel model = (DefaultTableModel) table.getModel();
+        for (int i = 0; i < model.getRowCount(); i++) {
+            GaTau ga = new GaTau();
+            ga.setMaGa((String) model.getValueAt(i, 0));
+            ga.setTenGa((String) model.getValueAt(i, 1));
+            ga.setDiaChi((String) model.getValueAt(i, 2));
+            ga.setSoDienThoai((String) model.getValueAt(i, 3));
+            ga.setTrangThai((String) model.getValueAt(i, 4));
+            list.add(ga);
+        }
+        return list;
+    }
     // Thêm Ga Tàu
  // Thêm Ga Tàu
     private void themGaTau() {
@@ -333,6 +371,17 @@ public class GaTauPanel extends JPanel {
             } else {
                 JOptionPane.showMessageDialog(this, "Xóa thất bại! Ga tàu có thể đang có lịch trình chuyến tàu.", "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
+        }
+    }
+    private void importExcel() {
+        JFileChooser fc = new JFileChooser();
+        fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
+            "Excel files (.xls, .xlsx)", "xls", "xlsx"));
+        if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            String path = fc.getSelectedFile().getAbsolutePath();
+            String result = controller.importExcel(path);
+            JOptionPane.showMessageDialog(this, result);
+            controller.loadDataToTable(); // refresh bảng
         }
     }
 

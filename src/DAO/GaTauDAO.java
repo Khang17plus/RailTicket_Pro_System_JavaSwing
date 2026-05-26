@@ -2,13 +2,30 @@ package DAO;
 
 import ConnectDB.ConnectDB;
 import Entity.GaTau;
-
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class GaTauDAO {
-
+	
+	// Tìm ga theo địa chỉ (chính xác)
+	public GaTau findByDiaChi(String diaChi) {
+	    String sql = "SELECT * FROM GaTau WHERE diaChi = ?";
+	    try (Connection conn = ConnectDB.getInstance().getConnection();
+	         PreparedStatement ps = conn.prepareStatement(sql)) {
+	        ps.setString(1, diaChi);
+	        ResultSet rs = ps.executeQuery();
+	        if (rs.next()) {
+	            return mapResultSet(rs);
+	        }
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	    }
+	    return null;
+	}
     // 🔹 Lấy tất cả ga tàu
     public List<GaTau> getAll() {
         List<GaTau> list = new ArrayList<>();
@@ -70,24 +87,40 @@ public class GaTauDAO {
         }
         return false;
     }
+    public GaTau findByTenGaAndDiaChi(String tenGa, String diaChi) {
+        String sql = "SELECT * FROM GaTau WHERE tenGa = ? AND diaChi = ?";
+        try (Connection conn = ConnectDB.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tenGa);
+            ps.setString(2, diaChi);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) return mapResultSet(rs);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+ // 🔹 Lấy mã ga lớn nhất hiện tại để phục vụ phát sinh mã tự động
  // 🔹 Lấy mã ga lớn nhất hiện tại để phục vụ phát sinh mã tự động
     public String getMaxMaGa() {
-        String sql = "SELECT MAX(maGa) FROM GaTau";
-        String maxMa = null;
-
+        // Cắt bỏ 2 ký tự đầu ("GA") và chuyển phần còn lại thành INT để sắp xếp giảm dần
+        String sql = 
+            "SELECT TOP 1 maGa FROM GaTau " +
+            "ORDER BY CAST(SUBSTRING(maGa, 3, LEN(maGa)) AS INT) DESC";
+            
         try (Connection conn = ConnectDB.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
             if (rs.next()) {
-                maxMa = rs.getString(1); // Lấy giá trị đầu tiên của kết quả (MAX(maGa))
+                return rs.getString("maGa");
             }
 
         } catch (SQLException e) {
             e.printStackTrace();
         }
         
-        return maxMa;
+        return null;
     }
 
     // 🔹 Cập nhật ga tàu
