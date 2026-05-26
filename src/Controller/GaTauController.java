@@ -47,6 +47,26 @@ public class GaTauController {
 		}
 		return result;
 	}
+	public String generateNextMaGa() {
+        // Giả sử gaTauDAO có hàm getMaxMaGa() trả về mã lớn nhất (vd: "GA015")
+        String maxMa = dao.getMaxMaGa(); 
+
+        if (maxMa == null || maxMa.isEmpty()) {
+            return "GA001";
+        }
+
+        // Cắt bỏ chữ "GA" để lấy phần số
+        String numberPart = maxMa.substring(2); 
+        int currentNumber;
+        try {
+            currentNumber = Integer.parseInt(numberPart);
+        } catch (NumberFormatException e) {
+            currentNumber = 0;
+        }
+
+        int nextNumber = currentNumber + 1;
+        return String.format("GA%03d", nextNumber);
+    }
 	
 	// 🔹 Xử lý xóa ga tàu
 	public boolean xoaGaTau(String maGa) {

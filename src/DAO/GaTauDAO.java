@@ -70,6 +70,25 @@ public class GaTauDAO {
         }
         return false;
     }
+ // 🔹 Lấy mã ga lớn nhất hiện tại để phục vụ phát sinh mã tự động
+    public String getMaxMaGa() {
+        String sql = "SELECT MAX(maGa) FROM GaTau";
+        String maxMa = null;
+
+        try (Connection conn = ConnectDB.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            if (rs.next()) {
+                maxMa = rs.getString(1); // Lấy giá trị đầu tiên của kết quả (MAX(maGa))
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        
+        return maxMa;
+    }
 
     // 🔹 Cập nhật ga tàu
     public boolean update(GaTau ga) {

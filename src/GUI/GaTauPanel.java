@@ -242,12 +242,31 @@ public class GaTauPanel extends JPanel {
     }
     
     // Thêm Ga Tàu
+ // Thêm Ga Tàu
     private void themGaTau() {
         String[] labels = {"Mã Ga", "Tên Ga", "Địa Chỉ", "Số Điện Thoại", "Trạng Thái"};
         JTextField[] fields = new JTextField[labels.length];
         for (int i = 0; i < fields.length; i++) {
             fields[i] = new JTextField();
         }
+
+        // --- XỬ LÝ PHÁT SINH TỰ ĐỘNG ---
+        
+        // 1. Mã Ga: Khóa ô nhập, tự động lấy mã từ Controller
+        fields[0].setEditable(false);
+        fields[0].setBackground(new Color(240, 240, 240)); 
+        if (controller != null) {
+            fields[0].setText(controller.generateNextMaGa()); // Gọi hàm phát sinh mã
+        } else {
+            fields[0].setText("GA001"); // Backup nếu controller chưa init kịp
+        }
+
+        // 2. Trạng Thái: Khóa ô nhập, mặc định là "Đang hoạt động"
+        fields[4].setEditable(false);
+        fields[4].setBackground(new Color(240, 240, 240));
+        fields[4].setText("Đang hoạt động");
+        
+        // ---------------------------------
 
         JButton btnCancel = new JButton("Hủy bỏ");
         JButton btnSave = new JButton("Lưu Ga Tàu");
@@ -268,8 +287,9 @@ public class GaTauPanel extends JPanel {
             String sdt = fields[3].getText().trim();
             String trangThai = fields[4].getText().trim();
 
-            if (maGa.isEmpty() || tenGa.isEmpty() || diaChi.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog, "Vui lòng nhập đủ Mã Ga, Tên và Địa chỉ!", "Lỗi", JOptionPane.WARNING_MESSAGE);
+            // Đã bỏ check rỗng cho Mã Ga vì máy tự sinh
+            if (tenGa.isEmpty() || diaChi.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "Vui lòng nhập đủ Tên và Địa chỉ ga!", "Lỗi", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
@@ -286,7 +306,7 @@ public class GaTauPanel extends JPanel {
                     });
                     dialog.dispose();
                 } else {
-                    JOptionPane.showMessageDialog(dialog, "Thêm thất bại! Trùng mã ga hoặc lỗi hệ thống.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(dialog, "Thêm thất bại! Lỗi hệ thống hoặc trùng mã.", "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             } else {
                 JOptionPane.showMessageDialog(dialog, "Chưa khởi tạo Controller!", "Lỗi", JOptionPane.ERROR_MESSAGE);
@@ -295,7 +315,6 @@ public class GaTauPanel extends JPanel {
 
         dialog.setVisible(true);
     }
-     
     // Xóa Ga Tàu
     private void xoaGaTau() {
         int selectedRow = table.getSelectedRow();
