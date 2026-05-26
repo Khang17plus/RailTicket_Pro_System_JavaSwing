@@ -2,27 +2,20 @@ package GUI;
 
 import java.util.*;
 import java.util.List;
-
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
-import java.awt.*;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
-import Entity.HoaDon; // Import Entity HoaDon
+import ConnectDB.ConnectDB;
+
+import java.awt.*;
+import java.io.FileOutputStream;
+import java.sql.*;
+import Entity.HoaDon;
 
 public class HoaDonPanel extends JPanel {
-    
+
     private Component component = new Component();
-    
-    private String[] hoaDonOptions = {
-        "Thêm hóa đơn",
-        "Xóa hóa đơn",
-        "Sửa thông tin", 
-        "Tra cứu hóa đơn"
-    };
-    
     private JTable table;
     private DefaultTableModel tableModel;
 
@@ -30,28 +23,32 @@ public class HoaDonPanel extends JPanel {
         JButton btn = new JButton(Cmt);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         String style = "arc:12; focusWidth:0; font: bold 13;";
-        if (Cmt.contains("Nhập")) {
-            btn.setBackground(new Color(59, 130, 246)); // xanh dương
+        if (Cmt.contains("In")) {
+            btn.setBackground(new Color(59, 130, 246));
+            btn.setForeground(Color.WHITE);
         } else if (Cmt.contains("Tìm")) {
-            btn.setBackground(Color.gray); // nền xám
-            btn.setForeground(Color.BLACK); // chữ đen
-            btn.setPreferredSize(new Dimension(60, 36));
+            btn.setBackground(Color.gray);
+            btn.setForeground(Color.BLACK);
+            btn.setPreferredSize(new Dimension(80, 36));
+        } else if (Cmt.contains("Chi tiết")) {
+            btn.setBackground(new Color(255, 193, 7)); // Màu vàng cho nút Chi tiết
+            btn.setForeground(Color.BLACK);
         } else {
-            btn.setBackground(new Color(34, 197, 94)); // xanh lá
+            btn.setBackground(new Color(34, 197, 94)); // Xanh lá cho Excel
+            btn.setForeground(Color.WHITE);
         }
-        btn.setPreferredSize(new Dimension(140, 36)); 
+        btn.setPreferredSize(new Dimension(140, 36));
         btn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         btn.setFocusPainted(false);
         btn.putClientProperty("FlatLaf.style", style + "margin:8,15,8,15");
-
         return btn;
     }
 
-    public JPanel createCardstatistical(String IconURL, String title, int value) {
+    public JPanel createCardstatistical(String title, String value) {
         JPanel card = new JPanel(new BorderLayout(15, 0));
-        ImageIcon icon = new ImageIcon(IconURL);
-        Image img = icon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
-        JLabel iconLabel = new JLabel(new ImageIcon(img));
+        JLabel iconLabel = new JLabel("📄"); 
+        iconLabel.setFont(new Font("Segoe UI", Font.PLAIN, 24));
+        iconLabel.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 0));
 
         JPanel textPanel = new JPanel();
         textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
@@ -61,7 +58,7 @@ public class HoaDonPanel extends JPanel {
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         titleLabel.setForeground(Color.GRAY);
 
-        JLabel valueLabel = new JLabel(String.valueOf(value));
+        JLabel valueLabel = new JLabel(value);
         valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
         valueLabel.setForeground(Color.BLACK);
 
@@ -70,9 +67,7 @@ public class HoaDonPanel extends JPanel {
 
         card.add(iconLabel, BorderLayout.WEST);
         card.add(textPanel, BorderLayout.CENTER);
-
         card.putClientProperty("FlatLaf.style", "arc:10; border:10,10,10,10; background:#FFFFFF");
-
         return card;
     }
 
@@ -80,315 +75,209 @@ public class HoaDonPanel extends JPanel {
         setLayout(new BorderLayout());
         setBackground(new Color(245, 247, 250));
 
-        // 2. Phần Header (Tiêu đề và Mô tả)
-        JPanel header = new JPanel();
-        header.setLayout(new BorderLayout());
+        // --- HEADER ---
+        JPanel header = new JPanel(new BorderLayout());
         header.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        header.setBackground(new Color(245, 247, 250)); 
+        header.setBackground(new Color(245, 247, 250));
 
         JPanel headerL = new JPanel();
         headerL.setLayout(new BoxLayout(headerL, BoxLayout.Y_AXIS));
-        headerL.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        headerL.setBackground(new Color(245, 247, 250));
+        
+        JLabel title = new JLabel("Quản lý hóa đơn");
+        title.setFont(new Font("Arial", Font.BOLD, 22));
+        JLabel sub = new JLabel("Hệ thống quản lý và in vé tàu RailWay_Pro");
+        sub.setForeground(Color.GRAY);
+        headerL.add(title);
+        headerL.add(sub);
+
         JPanel headerR = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
+        headerR.setBackground(new Color(245, 247, 250));
+        headerR.add(createCardstatistical("Doanh thu", "25,400k"));
+        headerR.add(createCardstatistical("Tổng hóa đơn", "150"));
 
-        // Cập nhật card thống kê cho Hóa Đơn
-        JPanel cardTongHD = createCardstatistical("img/user2.png", "Tổng số hóa đơn ", 1542);
-        JPanel cardHDMoi = createCardstatistical("img/user2.png", "Hóa đơn hôm nay  ", 24);
-        JPanel cardDoanhThu = createCardstatistical("img/user2.png", "Doanh thu (Triệu VNĐ) ", 320);
-
+        // --- ACTION PANEL ---
         JPanel actionPanel = new JPanel(new BorderLayout());
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        actionPanel.setBackground(new Color(245, 247, 250));
+        
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        searchPanel.setBackground(new Color(245, 247, 250));
         JTextField txtSearch = new JTextField();
-        txtSearch.setPreferredSize(new Dimension(400, 36));
+        txtSearch.setPreferredSize(new Dimension(350, 36));
         txtSearch.putClientProperty("FlatLaf.style", "arc:10");
+        txtSearch.putClientProperty("PlaceholderText", "Nhập mã hóa đơn cần tìm...");
+        
         JButton btnSearch = createButtonExcel("Tìm Kiếm");
-
         searchPanel.add(txtSearch);
         searchPanel.add(btnSearch);
 
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-
-        JButton imports = createButtonExcel("Nhập file excel");
-        JButton export = createButtonExcel("Xuất file excel");
-
-        rightPanel.add(export);
-        rightPanel.add(imports);
+        rightPanel.setBackground(new Color(245, 247, 250));
+        
+        // Thêm các nút chức năng bên phải
+        JButton btnDetail = createButtonExcel("Chi tiết");
+        JButton btnInVe = createButtonExcel("In vé QR");
+        JButton btnExcel = createButtonExcel("Xuất Excel");
+        
+        btnDetail.addActionListener(e -> hienThiChiTiet());
+        btnInVe.addActionListener(e -> handleInVe());
+        // btnExcel.addActionListener(e -> xuatFileExcel()); // Thịnh viết hàm Excel sau nhé
+        
+        rightPanel.add(btnDetail);
+        rightPanel.add(btnInVe);
+        rightPanel.add(btnExcel);
 
         actionPanel.add(searchPanel, BorderLayout.WEST);
-        actionPanel.add(rightPanel, BorderLayout.CENTER);
-
-        headerR.add(cardDoanhThu);
-        headerR.add(cardHDMoi);
-        headerR.add(cardTongHD);
-
-        JLabel title = new JLabel("Quản lý hóa đơn");
-        title.setFont(new Font("Arial", Font.BOLD, 22));
-
-        JLabel sub = new JLabel("Quản lý thông tin giao dịch, thanh toán và doanh thu hệ thống");
-        sub.setForeground(Color.GRAY);
-        sub.setFont(new Font("Arial", Font.PLAIN, 12));
-
-        headerL.add(title);
-        headerL.add(Box.createVerticalStrut(5));
-        headerL.add(sub);
+        actionPanel.add(rightPanel, BorderLayout.EAST);
 
         header.add(headerL, BorderLayout.WEST);
         header.add(headerR, BorderLayout.EAST);
         header.add(actionPanel, BorderLayout.SOUTH);
-
         add(header, BorderLayout.NORTH);
 
-        // 3. Phần Main chứa Table
-        JPanel main = new JPanel();
-        main.setLayout(new BorderLayout());
+        // --- MAIN TABLE ---
+        JPanel main = new JPanel(new BorderLayout());
+        main.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
         main.setBackground(new Color(245, 247, 250));
-        main.putClientProperty("FlatLaf.style", "arc:20; border:10,10,10,10");
 
-        JPanel tableCard = new JPanel(new BorderLayout());
-        tableCard.setBackground(Color.WHITE);
-        tableCard.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 220, 220)),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        ));
-
-        // Format Cột cho Hóa Đơn
-        String[] columns = {"Mã HĐ", "Mã KH", "Mã NV", "Ngày Lập", "Tổng Hàng", "Thuế", "Giảm Giá", "Tổng TT", "PT Thanh Toán"};
-        tableModel = new DefaultTableModel(columns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false; 
-            }
-        };
-
+        String[] columns = {"Mã HĐ", "Ngày Lập", "Khách Hàng", "Thuế", "Giảm Giá", "Tổng Thanh Toán"};
+        tableModel = new DefaultTableModel(columns, 0);
         table = new JTable(tableModel);
-        table.setFont(new Font("Arial", Font.PLAIN, 13));
-        table.setRowHeight(35); 
-        table.setGridColor(new Color(235, 235, 235)); 
-        table.setShowVerticalLines(false); 
-        table.setSelectionBackground(new Color(232, 240, 254)); 
-
-        JTableHeader tableHeader = table.getTableHeader();
-        tableHeader.setFont(new Font("Arial", Font.BOLD, 13));
-        tableHeader.setBackground(Color.WHITE);
-        tableHeader.setPreferredSize(new Dimension(100, 40));
-        tableHeader.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(220, 220, 220))); 
-
+        table.setRowHeight(40);
+        
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.getViewport().setBackground(Color.WHITE);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder()); 
-
-        tableCard.add(scrollPane, BorderLayout.CENTER);
-        tableCard.putClientProperty("FlatLaf.style", "arc:20; border:12,12,12,12; background:#FFFFFF");
-
-        main.add(tableCard, BorderLayout.CENTER);
+        scrollPane.putClientProperty("FlatLaf.style", "arc:20");
+        main.add(scrollPane, BorderLayout.CENTER);
         add(main, BorderLayout.CENTER);
+
+        // --- GỌI HÀM LOAD DỮ LIỆU TẠI ĐÂY ---
+        loadDataFromDatabase(); 
     }
 
-    public void setData(List<HoaDon> list) {
-        tableModel.setRowCount(0);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-        
-        for (HoaDon hd : list) {
-            String ngayLapStr = (hd.getNgayLap() != null) ? hd.getNgayLap().format(formatter) : "";
-            tableModel.addRow(new Object[] {
-                hd.getMaHoaDon(), hd.getMaKH(), hd.getMaNV(),
-                ngayLapStr, hd.getTongTienHang(), hd.getTongThue(), 
-                hd.getTongGiamGia(), hd.getTongThanhToan(), hd.getPhuongThucThanhToan()
-            });
+    private void hienThiChiTiet() {
+        int row = table.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn hóa đơn để xem chi tiết!");
+            return;
         }
+        String maHD = tableModel.getValueAt(row, 0).toString();
+        JOptionPane.showMessageDialog(this, "Đang hiển thị chi tiết cho hóa đơn: " + maHD);
+        // Thịnh viết thêm JDialog để hiện bảng CT_HoaDon tại đây nhé
     }
 
-    public DefaultTableModel getTableModel() {
-        return tableModel;
-    }
-
-    public List<JMenuItem> getMenuOption() {
-        List<JMenuItem> submenu = new ArrayList<>();
-        
-        for (String option : hoaDonOptions) {
-            JMenuItem it = new JMenuItem(option);
-            it.addActionListener(e -> {
-                String text = ((JMenuItem) e.getSource()).getText();
-                switch (text) {
-                    case "Thêm hóa đơn":
-                        themHoaDon();
-                        break;
-                    case "Xóa hóa đơn":
-                        xoaHoaDon();
-                        break;
-                    case "Sửa thông tin":
-                        suaHoaDon();
-                        break;
-                    case "Tra cứu hóa đơn":
-                        traCuuHoaDon();
-                        break;
-                    default:
-                        JOptionPane.showMessageDialog(null, "Chọn: " + text);
-                }
-            });
-            submenu.add(it);
+    private void handleInVe() {
+        int row = table.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn hóa đơn!");
+            return;
         }
-        return submenu;
+        String maHD = tableModel.getValueAt(row, 0).toString();
+        xuatVeQR(maHD);
     }
 
-    // Thêm hóa đơn
-    private void themHoaDon() {
-        // Không đưa "Ngày Lập" vào form vì sẽ lấy thời gian hệ thống tự động
-        String[] labels = {
-            "Mã Hóa Đơn", "Mã Khách Hàng", "Mã Nhân Viên", 
-            "Tổng Tiền Hàng", "Tổng Thuế", "Tổng Giảm Giá", "Tổng Thanh Toán", "Phương Thức TT"
-        };
-        JTextField[] fields = new JTextField[labels.length];
-        for (int i = 0; i < fields.length; i++) {
-            fields[i] = new JTextField();
-        }
+    public void xuatVeQR(String maHD) {
+        String sql = "SELECT v.maVe, kh.tenKH, kh.cccd, t.tenTau, gDi.tenGa, gDen.tenGa, ct.thoiGianDi, tt.tenToa, g.soGhe " +
+                     "FROM HoaDon hd " +
+                     "JOIN KhachHang kh ON hd.maKH = kh.maKH " +
+                     "JOIN CT_HoaDon cthd ON hd.maHoaDon = cthd.maHoaDon " +
+                     "JOIN VeTau v ON cthd.maVe = v.maVe " +
+                     "JOIN ChuyenTau ct ON v.maChuyen = ct.maChuyen " +
+                     "JOIN Tau t ON ct.maTau = t.maTau " +
+                     "JOIN GaTau gDi ON ct.maGaDi = gDi.maGa " +
+                     "JOIN GaTau gDen ON ct.maGaDen = gDen.maGa " +
+                     "JOIN Ghe g ON v.maGhe = g.maGhe " +
+                     "JOIN ToaTau tt ON g.maToa = tt.maToa " +
+                     "WHERE hd.maHoaDon = ?";
 
-        JButton btnCancel = new JButton("Hủy bỏ");
-        JButton btnSave = new JButton("Lưu Hóa Đơn");
+        try (Connection con = ConnectDB.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            
+            ps.setString(1, maHD);
+            ResultSet rs = ps.executeQuery();
 
-        JDialog dialog = component.createDinamicForm(
-            "Thêm Hóa Đơn Mới", 
-            "Nhập Thông Tin Giao Dịch", 
-            "Vui lòng điền đầy đủ dữ liệu thanh toán", 
-            labels, fields, new JButton[]{btnCancel, btnSave}
-        );
+            com.itextpdf.text.Document document = new com.itextpdf.text.Document(com.itextpdf.text.PageSize.A6);
+            String path = "VeTau_" + maHD + ".pdf";
+            com.itextpdf.text.pdf.PdfWriter.getInstance(document, new FileOutputStream(path));
+            document.open();
 
-        btnCancel.addActionListener(e -> dialog.dispose());
+            com.itextpdf.text.pdf.BaseFont bf = com.itextpdf.text.pdf.BaseFont.createFont("src/font/Arial Bold.ttf", com.itextpdf.text.pdf.BaseFont.IDENTITY_H, com.itextpdf.text.pdf.BaseFont.EMBEDDED);
+            com.itextpdf.text.Font fontBold = new com.itextpdf.text.Font(bf, 12, com.itextpdf.text.Font.BOLD);
+            com.itextpdf.text.Font fontNormal = new com.itextpdf.text.Font(bf, 10, com.itextpdf.text.Font.NORMAL);
 
-        btnSave.addActionListener(e -> {
-            String maHD = fields[0].getText().trim();
-            String maKH = fields[1].getText().trim();
-            String maNV = fields[2].getText().trim();
-            String tienHang = fields[3].getText().trim();
-            String thue = fields[4].getText().trim();
-            String giamGia = fields[5].getText().trim();
-            String tongTT = fields[6].getText().trim();
-            String ptThanhToan = fields[7].getText().trim();
+            while (rs.next()) {
+                document.add(new com.itextpdf.text.Paragraph("THẺ LÊN TÀU HỎA", fontBold));
+                
+                String maVe = rs.getString(1);
+                com.itextpdf.text.pdf.BarcodeQRCode qr = new com.itextpdf.text.pdf.BarcodeQRCode(maVe, 1, 1, null);
+                com.itextpdf.text.Image img = qr.getImage();
+                img.scaleAbsolute(100, 100);
+                img.setAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
+                document.add(img);
 
-            if (maHD.isEmpty() || maKH.isEmpty() || maNV.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog, "Mã HĐ, Mã KH và Mã NV không được để trống!", "Lỗi", JOptionPane.WARNING_MESSAGE);
-                return;
+                document.add(new com.itextpdf.text.Paragraph("Họ tên: " + rs.getNString(2), fontNormal));
+                document.add(new com.itextpdf.text.Paragraph("Số CCCD: " + rs.getString(3), fontNormal)); 
+                document.add(new com.itextpdf.text.Paragraph("Tàu: " + rs.getString(4) + " - Ghế: " + rs.getInt(9), fontNormal));
+                document.add(new com.itextpdf.text.Paragraph("Lộ trình: " + rs.getString(5) + " -> " + rs.getString(6), fontNormal));
+                
+                String thoiGianDi = rs.getTimestamp(7).toString().substring(0, 16); 
+                document.add(new com.itextpdf.text.Paragraph("Ngày đi: " + thoiGianDi, fontNormal)); 
+                
+                document.add(new com.itextpdf.text.Paragraph("------------------------------------------", fontNormal));
+                document.newPage(); 
             }
-
-            // Lấy thời gian hiện tại làm Ngày Lập
-            String ngayLap = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
-
-            // Mock Data - Thêm thẳng vào bảng không cần DB
-            tableModel.addRow(new Object[]{maHD, maKH, maNV, ngayLap, tienHang, thue, giamGia, tongTT, ptThanhToan});
-            JOptionPane.showMessageDialog(dialog, "Thêm hóa đơn thành công!");
-            dialog.dispose();
-        });
-
-        dialog.setVisible(true);
-    }
-
-    // Xóa hóa đơn
-    private void xoaHoaDon() {
-        int selectedRow = table.getSelectedRow();
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn hóa đơn cần xóa!");
-            return;
-        }
-
-        int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xóa hóa đơn này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
-        if (confirm == JOptionPane.YES_OPTION) {
-            tableModel.removeRow(selectedRow);
-            JOptionPane.showMessageDialog(this, "Xóa thành công!");
+            document.close();
+            Runtime.getRuntime().exec("cmd /c start \"\" \"" + path + "\"");
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
+    public void loadDataFromDatabase() {
+        String sql = "SELECT hd.maHoaDon, hd.ngayLap, kh.tenKH, hd.tongThue, hd.tongGiamGia, hd.tongThanhToan " +
+                     "FROM HoaDon hd " +
+                     "JOIN KhachHang kh ON hd.maKH = kh.maKH";
 
-    // Sửa thông tin hóa đơn
-    private void suaHoaDon() {
-        int selectedRow = table.getSelectedRow();
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn hóa đơn cần sửa!");
-            return;
+        tableModel.setRowCount(0); 
+
+        try (Connection con = ConnectDB.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                tableModel.addRow(new Object[]{
+                    rs.getString("maHoaDon"),
+                    rs.getTimestamp("ngayLap"),
+                    rs.getNString("tenKH"),
+                    String.format("%,.0f", rs.getDouble("tongThue")),      
+                    String.format("%,.0f", rs.getDouble("tongGiamGia")),   
+                    String.format("%,.0f VNĐ", rs.getDouble("tongThanhToan")) 
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-
-        // Lấy dữ liệu cũ từ Table
-        String maHD = tableModel.getValueAt(selectedRow, 0).toString();
-        String maKH = tableModel.getValueAt(selectedRow, 1).toString();
-        String maNV = tableModel.getValueAt(selectedRow, 2).toString();
-        String tienHang = tableModel.getValueAt(selectedRow, 4).toString();
-        String thue = tableModel.getValueAt(selectedRow, 5).toString();
-        String giamGia = tableModel.getValueAt(selectedRow, 6).toString();
-        String tongTT = tableModel.getValueAt(selectedRow, 7).toString();
-        String ptThanhToan = tableModel.getValueAt(selectedRow, 8).toString();
-
-        JDialog dialog = new JDialog();
-        dialog.setTitle("Sửa thông tin hóa đơn");
-        dialog.setSize(420, 500); // Tăng kích thước vì nhiều field
-        dialog.setLocationRelativeTo(null);
-        dialog.setLayout(new FlowLayout());
-
-        JLabel lbMaHD = new JLabel("Mã HĐ:");
-        JTextField txtMaHD = new JTextField(maHD, 25);
-        txtMaHD.setEditable(false);
-
-        JLabel lbMaKH = new JLabel("Mã KH:");
-        JTextField txtMaKH = new JTextField(maKH, 25);
-
-        JLabel lbMaNV = new JLabel("Mã NV:");
-        JTextField txtMaNV = new JTextField(maNV, 25);
-
-        JLabel lbTienHang = new JLabel("Tiền hàng:");
-        JTextField txtTienHang = new JTextField(tienHang, 25);
-
-        JLabel lbThue = new JLabel("Thuế:");
-        JTextField txtThue = new JTextField(thue, 25);
-
-        JLabel lbGiamGia = new JLabel("Giảm giá:");
-        JTextField txtGiamGia = new JTextField(giamGia, 25);
-        
-        JLabel lbTongTT = new JLabel("Tổng TT:");
-        JTextField txtTongTT = new JTextField(tongTT, 25);
-        
-        JLabel lbPTThanhToan = new JLabel("Phương thức TT:");
-        JTextField txtPTThanhToan = new JTextField(ptThanhToan, 25);
-
-        JButton btnUpdate = new JButton("Cập nhật");
-        JButton btnCancel = new JButton("Hủy");
-
-        dialog.add(lbMaHD);
-        dialog.add(txtMaHD);
-        dialog.add(lbMaKH);
-        dialog.add(txtMaKH);
-        dialog.add(lbMaNV);
-        dialog.add(txtMaNV);
-        dialog.add(lbTienHang);
-        dialog.add(txtTienHang);
-        dialog.add(lbThue);
-        dialog.add(txtThue);
-        dialog.add(lbGiamGia);
-        dialog.add(txtGiamGia);
-        dialog.add(lbTongTT);
-        dialog.add(txtTongTT);
-        dialog.add(lbPTThanhToan);
-        dialog.add(txtPTThanhToan);
-        
-        dialog.add(btnUpdate);
-        dialog.add(btnCancel);
-
-        btnUpdate.addActionListener(ev -> {
-            tableModel.setValueAt(txtMaKH.getText(), selectedRow, 1);
-            tableModel.setValueAt(txtMaNV.getText(), selectedRow, 2);
-            tableModel.setValueAt(txtTienHang.getText(), selectedRow, 4);
-            tableModel.setValueAt(txtThue.getText(), selectedRow, 5);
-            tableModel.setValueAt(txtGiamGia.getText(), selectedRow, 6);
-            tableModel.setValueAt(txtTongTT.getText(), selectedRow, 7);
-            tableModel.setValueAt(txtPTThanhToan.getText(), selectedRow, 8);
-
-            JOptionPane.showMessageDialog(dialog, "Cập nhật thành công!");
-            dialog.dispose();
-        });
-
-        btnCancel.addActionListener(ev -> dialog.dispose());
-        dialog.setVisible(true);
     }
 
-    // Tra cứu hóa đơn
-    private void traCuuHoaDon() {
-        String keyword = JOptionPane.showInputDialog(this, "Nhập Mã Hóa Đơn hoặc Mã KH cần tìm:");
-        JOptionPane.showMessageDialog(table, "Đã ghi nhận từ khóa: " + keyword + " (Chưa kết nối DB)");
+    public void setData(List<HoaDon> ds) {
+        // 1. Xóa toàn bộ dữ liệu cũ trên bảng trước khi đổ mới
+        tableModel.setRowCount(0);
+
+        // 2. Duyệt qua danh sách hóa đơn từ Database/DAO truyền vào
+        for (HoaDon hd : ds) {
+            // Định dạng số tiền để hiển thị đẹp mắt (ví dụ: 1,000,000 VNĐ)
+            String thueStr = String.format("%,.0f", hd.getTongThue());
+            String giamGiaStr = String.format("%,.0f", hd.getTongGiamGia());
+            String tongTienStr = String.format("%,.0f VNĐ", hd.getTongThanhToan());
+
+            // 3. Thêm dòng mới vào tableModel theo đúng thứ tự các cột:
+            // {"Mã HĐ", "Ngày Lập", "Khách Hàng", "Thuế", "Giảm Giá", "Tổng Thanh Toán"}
+            tableModel.addRow(new Object[] {
+                hd.getMaHoaDon(),               // Cột Mã HĐ
+                hd.getNgayLap(),                // Cột Ngày Lập
+                hd.getMaKH(),                   // Cột Khách Hàng (Mã hoặc Tên tùy DAO)
+                thueStr,                        // Cột Thuế
+                giamGiaStr,                     // Cột Giảm Giá
+                tongTienStr                     // Cột Tổng Thanh Toán
+            });
+        }
     }
 }

@@ -19,8 +19,7 @@ public class KhachHangDAO {
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
-                KhachHang kh = mapResultSet(rs);
-                list.add(kh);
+                list.add(mapResultSet(rs));
             }
 
         } catch (Exception e) {
@@ -37,10 +36,30 @@ public class KhachHangDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, maKH);
-            ResultSet rs = ps.executeQuery();
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSet(rs);
+                }
+            }
 
-            if (rs.next()) {
-                return mapResultSet(rs);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // 🔹 Tìm theo Số điện thoại (Thường dùng cho luồng tra cứu nhanh khi bán vé)
+    public KhachHang findBySoDienThoai(String sdt) {
+        String sql = "SELECT * FROM KhachHang WHERE soDienThoai = ?";
+
+        try (Connection conn = ConnectDB.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, sdt);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSet(rs);
+                }
             }
 
         } catch (Exception e) {
@@ -61,7 +80,8 @@ public class KhachHangDAO {
             ps.setString(3, kh.getCccd());
             ps.setString(4, kh.getSoDienThoai());
             ps.setString(5, kh.getEmail());
-            ps.setTimestamp(6, Timestamp.valueOf(kh.getNgayDangKy()));
+            // Nếu ngayDangKy null thì lấy thời gian hiện tại của hệ thống
+            ps.setTimestamp(6, kh.getNgayDangKy() != null ? Timestamp.valueOf(kh.getNgayDangKy()) : new Timestamp(System.currentTimeMillis()));
 
             return ps.executeUpdate() > 0;
 
@@ -92,23 +112,50 @@ public class KhachHangDAO {
         return false;
     }
 
-    // 🔹 Xoá khách hàng
-    public boolean delete(String maKH) {
-        String sql = "DELETE FROM KhachHang WHERE maKH = ?";
-
+    // 🔹 Tìm kiếm khách hàng (Theo CCCD hoặc SĐT)
+    public List<KhachHang> searchKhachHang(String keyword) {
+        List<KhachHang> list = new ArrayList<>();
+        String sql = "SELECT * FROM KhachHang WHERE cccd LIKE ? OR soDienThoai LIKE ?";
+        
         try (Connection conn = ConnectDB.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, maKH);
-            return ps.executeUpdate() > 0;
-
-        } catch (Exception e) {
+             
+            String searchPattern = "%" + keyword + "%";
+            ps.setString(1, searchPattern); // cho cccd
+            ps.setString(2, searchPattern); // cho soDienThoai
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapResultSet(rs)); // Sử dụng lại hàm map chuẩn, tránh lặp code
+                }
+            }
+        } catch (SQLException e) {
             e.printStackTrace();
         }
-        return false;
+        return list;
     }
 
-    // 🔥 Hàm map ResultSet → Object
+    // =========================================================================
+    // 🔥 LẤY MÃ KHÁCH HÀNG LỚN NHẤT HIỆN TẠI (ĐỂ TỰ SINH MÃ TỰ ĐỘNG KH0xx)
+    // =========================================================================
+    public String getMaxMaKhachHang() {
+        String maxMa = "";
+        String sql = "SELECT MAX(maKH) FROM KhachHang";
+
+        try (Connection conn = ConnectDB.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            if (rs.next()) {
+                maxMa = rs.getString(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return maxMa;
+    }
+
+    // 🔥 Hàm duy nhất map ResultSet → Object KhachHang
     private KhachHang mapResultSet(ResultSet rs) throws SQLException {
         KhachHang kh = new KhachHang();
         kh.setMaKH(rs.getString("maKH"));
@@ -123,42 +170,5 @@ public class KhachHangDAO {
         }
 
         return kh;
-    }
- // Tìm kiếm khách hàng (Chỉ theo CCCD hoặc SĐT)
-    public List<KhachHang> searchKhachHang(String keyword) {
-        List<KhachHang> list = new ArrayList<>();
-        
-        // Câu SQL chỉ sử dụng điều kiện cho cccd và soDienThoai
-        String sql = "SELECT * FROM KhachHang WHERE cccd LIKE ? OR soDienThoai LIKE ?";
-        
-        try (Connection con = ConnectDB.getInstance().getConnection();
-             PreparedStatement pst = con.prepareStatement(sql)) {
-             
-            String searchPattern = "%" + keyword + "%";
-            
-            // Bây giờ chỉ còn 2 dấu ? nên ta chỉ setString 2 lần
-            pst.setString(1, searchPattern); // cho cccd
-            pst.setString(2, searchPattern); // cho soDienThoai
-            
-            try (ResultSet rs = pst.executeQuery()) {
-                while (rs.next()) {
-                    java.time.LocalDateTime ngayDK = (rs.getTimestamp("ngayDangKy") != null) 
-                            ? rs.getTimestamp("ngayDangKy").toLocalDateTime() : null;
-                            
-                    KhachHang kh = new KhachHang(
-                        rs.getString("maKH"), 
-                        rs.getString("tenKH"), 
-                        rs.getString("cccd"),
-                        rs.getString("soDienThoai"), 
-                        rs.getString("email"), 
-                        ngayDK
-                    );
-                    list.add(kh);
-                }
-            }
-        } catch (java.sql.SQLException e) {
-            e.printStackTrace();
-        }
-        return list;
     }
 }

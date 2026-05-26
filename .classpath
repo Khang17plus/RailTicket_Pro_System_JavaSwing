@@ -10,5 +10,12 @@
 	<classpathentry kind="lib" path="lib/mssql-jdbc-11.2.0.jre11.jar"/>
 	<classpathentry kind="lib" path="lib/itextpdf-5.5.13.3.jar"/>
 	<classpathentry kind="lib" path="lib/flatlaf-3.5.4.jar"/>
+	<classpathentry kind="lib" path="lib/javase-3.5.3.jar"/>
+	<classpathentry kind="lib" path="lib/core-3.5.3.jar"/>
+	<classpathentry kind="lib" path="lib/webcam-capture-0.3.12.jar"/>
+	<classpathentry kind="lib" path="lib/slf4j-simple-2.0.9.jar"/>
+	<classpathentry kind="lib" path="lib/slf4j-api-2.0.9.jar"/>
+	<classpathentry kind="lib" path="lib/bridj-0.7.0.jar"/>
+	<classpathentry kind="lib" path="lib/jcalendar-1.4.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

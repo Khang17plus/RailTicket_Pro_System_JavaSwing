@@ -48,6 +48,7 @@ public class TauDAO {
         }
         return null;
     }
+    
 
     // 🔹 Thêm tàu
     public boolean insert(Tau tau) {
@@ -114,4 +115,22 @@ public class TauDAO {
         tau.setTrangThai(rs.getString("trangThai"));
         return tau;
     }
+    
+    // getMâTaumax 
+   public String getMaxMaTau() {
+    String sql = "SELECT TOP 1 maTau FROM Tau " +
+                 "WHERE maTau LIKE 'T%' " +
+                 "ORDER BY LEN(maTau) DESC, " +
+                 "CAST(SUBSTRING(maTau, 2, LEN(maTau)) AS INT) DESC";
+    try (Connection conn = ConnectDB.getInstance().getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql);
+         ResultSet rs = ps.executeQuery()) {
+        if (rs.next()) {
+            return rs.getString("maTau");
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return null;
+}
 }

@@ -2,55 +2,67 @@ package GUI;
 
 import java.util.*;
 import java.util.List;
-
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
 
-import Entity.NhanVien; // Import Entity NhanVien
+import Controller.NhanVienController;
+import Entity.NhanVien;
 
 public class NhanVienPanel extends JPanel {
+    private NhanVienController controller;
+    private Component component = new Component(); // Sử dụng class Component dùng chung
     
-    private Component component = new Component();
-    
+    // Quản lý các số thống kê nhân viên
+    private JLabel lblDangLamViec;
+    private JLabel lblNghieViec;
+    private JLabel lblTongNhanVien;
+
+    // 🔥 Đã loại bỏ lựa chọn "Xóa nhân viên"
     private String[] nhanVienOptions = {
         "Thêm nhân viên",
-        "Xóa nhân viên",
-        "Sửa thông tin", 
-        "Tra cứu nhân viên"
+        "Sửa thông tin"
     };
-    
+
     private JTable table;
     private DefaultTableModel tableModel;
 
+    public void setController(NhanVienController controller) {
+        this.controller = controller;
+    }
+
+    // Tái sử dụng style Button
     public JButton createButtonExcel(String Cmt) {
         JButton btn = new JButton(Cmt);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         String style = "arc:12; focusWidth:0; font: bold 13;";
+        
         if (Cmt.contains("Nhập")) {
-            btn.setBackground(new Color(59, 130, 246)); // xanh dương
+            btn.setBackground(new Color(59, 130, 246)); // Blue
         } else if (Cmt.contains("Tìm")) {
-            btn.setBackground(Color.gray); // nền xám
-            btn.setForeground(Color.BLACK); // chữ đen
+            btn.setBackground(Color.gray);
+            btn.setForeground(Color.BLACK);
             btn.setPreferredSize(new Dimension(60, 36));
         } else {
-            btn.setBackground(new Color(34, 197, 94)); // xanh lá
+            btn.setBackground(new Color(34, 197, 94)); // Green
         }
-        btn.setPreferredSize(new Dimension(140, 36)); 
+        
+        btn.setPreferredSize(new Dimension(140, 36));
         btn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         btn.setFocusPainted(false);
         btn.putClientProperty("FlatLaf.style", style + "margin:8,15,8,15");
-
         return btn;
     }
 
-    public JPanel createCardstatistical(String IconURL, String title, int value) {
+    // Tái sử dụng style Card thống kê cho Nhân Viên
+    public JPanel createCardstatistical(String IconURL, String title, String value) {
         JPanel card = new JPanel(new BorderLayout(15, 0));
+        
         ImageIcon icon = new ImageIcon(IconURL);
-        Image img = icon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
+        Image img = icon.getImage().getScaledInstance(25, 25, Image.SCALE_SMOOTH);
         JLabel iconLabel = new JLabel(new ImageIcon(img));
-
+        
         JPanel textPanel = new JPanel();
         textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
         textPanel.setBackground(Color.WHITE);
@@ -59,18 +71,25 @@ public class NhanVienPanel extends JPanel {
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         titleLabel.setForeground(Color.GRAY);
 
-        JLabel valueLabel = new JLabel(String.valueOf(value));
+        JLabel valueLabel = new JLabel(value);
         valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
         valueLabel.setForeground(Color.BLACK);
+
+        if (title.equals("Đang làm việc")) {
+            lblDangLamViec = valueLabel;
+        } else if (title.equals("Nghỉ việc")) {
+            lblNghieViec = valueLabel;
+        } else if (title.equals("Tổng nhân viên")) {
+            lblTongNhanVien = valueLabel;
+        }
 
         textPanel.add(titleLabel);
         textPanel.add(valueLabel);
 
         card.add(iconLabel, BorderLayout.WEST);
         card.add(textPanel, BorderLayout.CENTER);
-
+        
         card.putClientProperty("FlatLaf.style", "arc:10; border:10,10,10,10; background:#FFFFFF");
-
         return card;
     }
 
@@ -78,146 +97,146 @@ public class NhanVienPanel extends JPanel {
         setLayout(new BorderLayout());
         setBackground(new Color(245, 247, 250));
 
-        // 2. Phần Header (Tiêu đề và Mô tả)
-        JPanel header = new JPanel();
-        header.setLayout(new BorderLayout());
+        // --- HEADER SECTION ---
+        JPanel header = new JPanel(new BorderLayout());
         header.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        header.setBackground(new Color(245, 247, 250)); 
+        header.setBackground(new Color(245, 247, 250));
 
         JPanel headerL = new JPanel();
         headerL.setLayout(new BoxLayout(headerL, BoxLayout.Y_AXIS));
-        headerL.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        JPanel headerR = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
-
-        JPanel cardNV = createCardstatistical("img/user2.png", "Tổng nhân sự ", 45);
-        JPanel cardNVmoi = createCardstatistical("img/user2.png", "Nhân viên mới  ", 3);
-        JPanel cardNVMua = createCardstatistical("img/user2.png", "Đang làm việc ", 42);
-
-        JPanel actionPanel = new JPanel(new BorderLayout());
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        JTextField txtSearch = new JTextField();
-        txtSearch.setPreferredSize(new Dimension(400, 36));
-        txtSearch.putClientProperty("FlatLaf.style", "arc:10");
-        JButton btnSearch = createButtonExcel("Tìm Kiếm");
-
-        searchPanel.add(txtSearch);
-        searchPanel.add(btnSearch);
-
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-
-        JButton imports = createButtonExcel("Nhập file excel");
-        JButton export = createButtonExcel("Xuất file excel");
-
-        rightPanel.add(export);
-        rightPanel.add(imports);
-
-        actionPanel.add(searchPanel, BorderLayout.WEST);
-        actionPanel.add(rightPanel, BorderLayout.CENTER);
-
-        headerR.add(cardNVMua);
-        headerR.add(cardNVmoi);
-        headerR.add(cardNV);
-
-        JLabel title = new JLabel("Quản lý nhân viên");
+        headerL.setOpaque(false);
+        
+        JLabel title = new JLabel("Quản lý nhân viên hệ thống");
         title.setFont(new Font("Arial", Font.BOLD, 22));
-
-        JLabel sub = new JLabel("Quản lý thông tin và trạng thái nhân sự trong hệ thống");
+        JLabel sub = new JLabel("Tạo, phân quyền và điều hành hồ sơ nhân viên nghiệp vụ đường sắt");
         sub.setForeground(Color.GRAY);
         sub.setFont(new Font("Arial", Font.PLAIN, 12));
-
+        
         headerL.add(title);
         headerL.add(Box.createVerticalStrut(5));
         headerL.add(sub);
 
+        // Grid 1 hàng 3 cột cho gọn gàng và cân đối giao diện nhân viên
+        JPanel headerR = new JPanel(new GridLayout(1, 3, 15, 0));
+        headerR.setOpaque(false);
+        headerR.add(createCardstatistical("img/expired.png", "Nghỉ việc", "00"));      
+        headerR.add(createCardstatistical("img/valid.png", "Đang làm việc", "00"));
+        headerR.add(createCardstatistical("img/equal.png", "Tổng nhân viên", "00"));
+
+        // --- ACTION PANEL (Search & Excel) ---
+        JPanel actionPanel = new JPanel(new BorderLayout());
+        actionPanel.setOpaque(false);
+        
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        searchPanel.setOpaque(false);
+        JTextField txtSearch = new JTextField();
+        txtSearch.setPreferredSize(new Dimension(350, 36));
+        txtSearch.putClientProperty("FlatLaf.style", "arc:10");
+        txtSearch.putClientProperty("JTextField.placeholderText", "Nhập mã NV hoặc số điện thoại...");
+        JButton btnSearch = createButtonExcel("Tìm Kiếm");
+        
+        searchPanel.add(txtSearch);
+        searchPanel.add(btnSearch);
+
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        rightPanel.setOpaque(false);
+        rightPanel.add(createButtonExcel("Xuất file excel"));
+        rightPanel.add(createButtonExcel("Nhập file excel"));
+
+        actionPanel.add(searchPanel, BorderLayout.WEST);
+        actionPanel.add(rightPanel, BorderLayout.CENTER);
+
         header.add(headerL, BorderLayout.WEST);
         header.add(headerR, BorderLayout.EAST);
         header.add(actionPanel, BorderLayout.SOUTH);
-
         add(header, BorderLayout.NORTH);
 
-        // 3. Phần Main chứa Table
-        JPanel main = new JPanel();
-        main.setLayout(new BorderLayout());
+        // --- MAIN TABLE SECTION ---
+        JPanel main = new JPanel(new BorderLayout());
         main.setBackground(new Color(245, 247, 250));
-        main.putClientProperty("FlatLaf.style", "arc:20; border:10,10,10,10");
+        main.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         JPanel tableCard = new JPanel(new BorderLayout());
-        tableCard.setBackground(Color.WHITE);
-        tableCard.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 220, 220)),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        ));
+        tableCard.putClientProperty("FlatLaf.style", "arc:20; border:12,12,12,12; background:#FFFFFF");
 
-        // Format Cột cho Nhân Viên
-        String[] columns = {"Mã NV", "Họ và tên", "Chức vụ", "Số điện thoại", "Trạng thái"};
+        String[] columns = {"Mã NV", "Tên nhân viên", "Chức vụ", "Số điện thoại", "Trạng thái"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
-            public boolean isCellEditable(int row, int column) {
-                return false; 
-            }
+            public boolean isCellEditable(int row, int col) { return false; }
         };
 
         table = new JTable(tableModel);
-        table.setFont(new Font("Arial", Font.PLAIN, 13));
-        table.setRowHeight(35); 
-        table.setGridColor(new Color(235, 235, 235)); 
-        table.setShowVerticalLines(false); 
-        table.setSelectionBackground(new Color(232, 240, 254)); 
+        table.setRowHeight(40);
+        table.setShowVerticalLines(false);
+        table.setSelectionBackground(new Color(232, 240, 254));
 
         JTableHeader tableHeader = table.getTableHeader();
         tableHeader.setFont(new Font("Arial", Font.BOLD, 13));
         tableHeader.setBackground(Color.WHITE);
         tableHeader.setPreferredSize(new Dimension(100, 40));
-        tableHeader.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(220, 220, 220))); 
 
         JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getViewport().setBackground(Color.WHITE);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder()); 
 
         tableCard.add(scrollPane, BorderLayout.CENTER);
-        tableCard.putClientProperty("FlatLaf.style", "arc:20; border:12,12,12,12; background:#FFFFFF");
-
         main.add(tableCard, BorderLayout.CENTER);
         add(main, BorderLayout.CENTER);
+        
+        // Sự kiện tìm kiếm nhân viên
+        btnSearch.addActionListener(e -> {
+            String keyword = txtSearch.getText().trim();
+            if (controller != null) {
+                controller.timKiemNhanVien(keyword);
+            }
+        });
     }
 
+    // Đổ dữ liệu Nhân viên lên JTable
     public void setData(List<NhanVien> list) {
         tableModel.setRowCount(0);
         for (NhanVien nv : list) {
-            String trangThaiStr = nv.isTrangThai() ? "Đang làm việc" : "Nghỉ việc";
-            tableModel.addRow(new Object[] {
-                nv.getMaNV(), nv.getTenNV(), nv.getChucVu(),
-                nv.getSoDienThoai(), trangThaiStr
+            String trangThaiHienThi = nv.isTrangThai() ? "Đang làm việc" : "Nghỉ việc";
+
+            tableModel.addRow(new Object[]{
+                nv.getMaNV(),               
+                nv.getTenNV(),              
+                nv.getChucVu(),             
+                nv.getSoDienThoai(),              
+                trangThaiHienThi
             });
         }
     }
 
-    public DefaultTableModel getTableModel() {
-        return tableModel;
+    // Cập nhật số lượng lên các Card thống kê
+    public void capNhatThongKeCoDinh(List<NhanVien> allList) {
+        int dangLamViec = 0;
+        int nghieViec = 0;
+        int tongNhanVien = allList.size();
+        
+        for (NhanVien nv : allList) {
+            if (nv.isTrangThai()) {
+                dangLamViec++;
+            } else {
+                nghieViec++;
+            }
+        }
+
+        if (lblNghieViec != null) lblNghieViec.setText(String.format("%02d", nghieViec));
+        if (lblDangLamViec != null) lblDangLamViec.setText(String.format("%02d", dangLamViec));
+        if (lblTongNhanVien != null) lblTongNhanVien.setText(String.format("%02d", tongNhanVien));
     }
 
+    // Menu chuột phải / Menu Option
     public List<JMenuItem> getMenuOption() {
         List<JMenuItem> submenu = new ArrayList<>();
-        
         for (String option : nhanVienOptions) {
             JMenuItem it = new JMenuItem(option);
             it.addActionListener(e -> {
-                String text = ((JMenuItem) e.getSource()).getText();
+                String text = it.getText();
                 switch (text) {
-                    case "Thêm nhân viên":
-                        themNhanVien();
-                        break;
-                    case "Xóa nhân viên":
-                        xoaNhanVien();
-                        break;
-                    case "Sửa thông tin":
-                        suaNhanVien();
-                        break;
-                    case "Tra cứu nhân viên":
-                        traCuuNhanVien();
-                        break;
-                    default:
-                        JOptionPane.showMessageDialog(null, "Chọn: " + text);
+                    case "Thêm nhân viên": themNhanVien(); break;
+                    case "Sửa thông tin": suaNhanVien(); break;
                 }
             });
             submenu.add(it);
@@ -225,132 +244,121 @@ public class NhanVienPanel extends JPanel {
         return submenu;
     }
 
-    // Thêm nhân viên
+    // 🔥 ĐÃ ĐỒNG BỘ: Tự phát sinh mã tự động và khóa Edit ô Mã NV
     private void themNhanVien() {
-        String[] labels = {"Mã Nhân Viên", "Họ và Tên", "Chức Vụ", "Số Điện Thoại", "Trạng Thái (Đang làm/Nghỉ)"};
-        JTextField[] fields = new JTextField[labels.length];
-        for (int i = 0; i < fields.length; i++) {
-            fields[i] = new JTextField();
-        }
-
-        JButton btnCancel = new JButton("Hủy bỏ");
-        JButton btnSave = new JButton("Lưu Nhân Viên");
-
-        JDialog dialog = component.createDinamicForm(
-            "Thêm Nhân Viên Mới", 
-            "Nhập Thông Tin", 
-            "Vui lòng điền đầy đủ thông tin nhân sự", 
-            labels, fields, new JButton[]{btnCancel, btnSave}
-        );
-
-        btnCancel.addActionListener(e -> dialog.dispose());
-
-        btnSave.addActionListener(e -> {
-            String maNV = fields[0].getText().trim();
-            String tenNV = fields[1].getText().trim();
-            String chucVu = fields[2].getText().trim();
-            String sdt = fields[3].getText().trim();
-            String trangThai = fields[4].getText().trim();
-
-            if (maNV.isEmpty() || tenNV.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog, "Mã NV và Tên NV không được để trống!", "Lỗi", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            // Mock Data - Thêm thẳng vào bảng không cần DB
-            tableModel.addRow(new Object[]{maNV, tenNV, chucVu, sdt, trangThai});
-            JOptionPane.showMessageDialog(dialog, "Thêm nhân viên thành công!");
-            dialog.dispose();
-        });
-
-        dialog.setVisible(true);
-    }
-
-    // Xóa nhân viên
-    private void xoaNhanVien() {
-        int selectedRow = table.getSelectedRow();
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn nhân viên cần xóa!");
+        if (controller == null) {
+            JOptionPane.showMessageDialog(this, "Hệ thống chưa kết nối dữ liệu bộ điều khiển!");
             return;
         }
 
-        int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xóa nhân viên này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
-        if (confirm == JOptionPane.YES_OPTION) {
-            tableModel.removeRow(selectedRow);
-            JOptionPane.showMessageDialog(this, "Xóa thành công!");
-        }
+        String[] labels = {"Mã NV", "Tên NV", "Chức vụ", "Số điện thoại", "Trạng thái (1:Đi làm, 0:Nghỉ)"};
+        JTextField[] fields = new JTextField[labels.length];
+        for (int i = 0; i < fields.length; i++) fields[i] = new JTextField();
+
+        // Tự phát sinh mã thông qua Controller và đưa vào textfield
+        String maTuSinh = controller.phatSinhMaTuDong();
+        fields[0].setText(maTuSinh);
+        fields[0].setEditable(false); // Khóa lại không cho chỉnh sửa mã
+        fields[0].setBackground(new Color(240, 240, 240));
+
+        // Mặc định ô trạng thái nhập là 1 (Đang đi làm) khi thêm mới
+        fields[4].setText("1");
+
+        JButton btnCancel = new JButton("Hủy");
+        JButton btnSave = new JButton("Lưu");
+
+        JDialog dialog = component.createDinamicForm("Thêm Nhân Viên", "Nhập Thông Tin", 
+                "Thiết lập hồ sơ nhân viên mới vào hệ thống", labels, fields, new JButton[]{btnCancel, btnSave});
+
+        btnCancel.addActionListener(e -> dialog.dispose());
+        
+        btnSave.addActionListener(e -> {
+            try {
+                String ma = fields[0].getText().trim();
+                String ten = fields[1].getText().trim();
+                String chucVu = fields[2].getText().trim();
+                String sdt = fields[3].getText().trim();
+                boolean trangThai = fields[4].getText().trim().equals("1");
+
+                if (ten.isEmpty() || chucVu.isEmpty() || sdt.isEmpty()) {
+                    JOptionPane.showMessageDialog(dialog, "Vui lòng nhập đầy đủ thông tin!");
+                    return;
+                }
+
+                NhanVien nv = new NhanVien(ma, ten, chucVu, sdt, trangThai);
+
+                if (controller.themNhanVien(nv)) {
+                    JOptionPane.showMessageDialog(dialog, "Thêm nhân viên thành công!");
+                    controller.loadDataToTable();
+                    dialog.dispose();
+                } else {
+                    JOptionPane.showMessageDialog(dialog, "Lỗi khi thêm vào CSDL! Vui lòng thử lại.");
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(dialog, "Lỗi: " + ex.getMessage());
+            }
+        });
+        dialog.setVisible(true);
     }
 
-    // Sửa thông tin nhân viên
     private void suaNhanVien() {
-        int selectedRow = table.getSelectedRow();
-        if (selectedRow == -1) {
+        int row = table.getSelectedRow();
+        if (row == -1) {
             JOptionPane.showMessageDialog(this, "Vui lòng chọn nhân viên cần sửa!");
             return;
         }
 
-        // Lấy dữ liệu cũ
-        String maCu = tableModel.getValueAt(selectedRow, 0).toString();
-        String tenCu = tableModel.getValueAt(selectedRow, 1).toString();
-        String chucVuCu = tableModel.getValueAt(selectedRow, 2).toString();
-        String sdtCu = tableModel.getValueAt(selectedRow, 3).toString();
-        String trangThaiCu = tableModel.getValueAt(selectedRow, 4).toString();
+        String[] labels = {"Mã NV (Không sửa)", "Tên NV", "Chức vụ", "Số điện thoại", "Trạng thái (1:Đi làm, 0:Nghỉ)"};
+        JTextField[] fields = new JTextField[labels.length];
+        for (int i = 0; i < fields.length; i++) {
+            fields[i] = new JTextField();
+            if (i < 4) {
+                fields[i].setText(tableModel.getValueAt(row, i).toString());
+            }
+        }
+        
+        // Đổ trạng thái hiện tại từ text hiển thị sang số "1" hoặc "0" để sửa
+        String currentStatusText = tableModel.getValueAt(row, 4).toString();
+        fields[4].setText(currentStatusText.equals("Đang làm việc") ? "1" : "0");
+        
+        fields[0].setEditable(false);
+        fields[0].setBackground(new Color(240, 240, 240));
 
-        JDialog dialog = new JDialog();
-        dialog.setTitle("Sửa thông tin nhân viên");
-        dialog.setSize(400, 350);
-        dialog.setLocationRelativeTo(null);
-        dialog.setLayout(new FlowLayout());
-
-        JLabel lbMa = new JLabel("Mã NV:");
-        JTextField txtMa = new JTextField(maCu, 20);
-        txtMa.setEditable(false);
-
-        JLabel lbTen = new JLabel("Họ tên:");
-        JTextField txtTen = new JTextField(tenCu, 20);
-
-        JLabel lbChucVu = new JLabel("Chức vụ:");
-        JTextField txtChucVu = new JTextField(chucVuCu, 20);
-
-        JLabel lbSdt = new JLabel("SĐT:");
-        JTextField txtSdt = new JTextField(sdtCu, 20);
-
-        JLabel lbTrangThai = new JLabel("Trạng thái:");
-        JTextField txtTrangThai = new JTextField(trangThaiCu, 20);
-
-        JButton btnUpdate = new JButton("Cập nhật");
         JButton btnCancel = new JButton("Hủy");
+        JButton btnUpdate = new JButton("Cập nhật");
 
-        dialog.add(lbMa);
-        dialog.add(txtMa);
-        dialog.add(lbTen);
-        dialog.add(txtTen);
-        dialog.add(lbChucVu);
-        dialog.add(txtChucVu);
-        dialog.add(lbSdt);
-        dialog.add(txtSdt);
-        dialog.add(lbTrangThai);
-        dialog.add(txtTrangThai);
-        dialog.add(btnUpdate);
-        dialog.add(btnCancel);
+        JDialog dialog = component.createDinamicForm("Sửa Nhân Viên", "Chỉnh Sửa Thông Tin", 
+                "Cập nhật lại hồ sơ nhân sự (Đặt về 0 để thiết lập nghỉ việc)", labels, fields, new JButton[]{btnCancel, btnUpdate});
 
-        btnUpdate.addActionListener(ev -> {
-            tableModel.setValueAt(txtTen.getText(), selectedRow, 1);
-            tableModel.setValueAt(txtChucVu.getText(), selectedRow, 2);
-            tableModel.setValueAt(txtSdt.getText(), selectedRow, 3);
-            tableModel.setValueAt(txtTrangThai.getText(), selectedRow, 4);
+        btnCancel.addActionListener(e -> dialog.dispose());
 
-            JOptionPane.showMessageDialog(dialog, "Cập nhật thành công!");
-            dialog.dispose();
+        btnUpdate.addActionListener(e -> {
+            try {
+                String ma = fields[0].getText().trim();
+                String ten = fields[1].getText().trim();
+                String chucVu = fields[2].getText().trim();
+                String sdt = fields[3].getText().trim();
+                boolean trangThai = fields[4].getText().trim().equals("1");
+
+                if (ten.isEmpty() || chucVu.isEmpty() || sdt.isEmpty()) {
+                    JOptionPane.showMessageDialog(dialog, "Thông tin không được bỏ trống!");
+                    return;
+                }
+
+                NhanVien nv = new NhanVien(ma, ten, chucVu, sdt, trangThai);
+
+                if (controller != null && controller.updateNhanVien(nv)) {
+                    JOptionPane.showMessageDialog(dialog, "Cập nhật hồ sơ thành công!");
+                    controller.loadDataToTable();
+                    dialog.dispose();
+                } else {
+                    JOptionPane.showMessageDialog(dialog, "Lỗi khi cập nhật dữ liệu!");
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(dialog, "Lỗi định dạng: " + ex.getMessage());
+            }
         });
 
-        btnCancel.addActionListener(ev -> dialog.dispose());
         dialog.setVisible(true);
-    }
-
-    // Tra cứu nhân viên
-    private void traCuuNhanVien() {
-        String keyword = JOptionPane.showInputDialog(this, "Nhập tên hoặc Mã NV cần tìm:");
-        JOptionPane.showMessageDialog(table, "Đã ghi nhận từ khóa: " + keyword + " (Chưa kết nối DB)");
     }
 }

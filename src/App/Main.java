@@ -6,14 +6,19 @@ import com.formdev.flatlaf.FlatLightLaf;
 import com.formdev.flatlaf.themes.FlatMacLightLaf;
 import com.formdev.flatlaf.ui.FlatPopupMenuSeparatorUI;
 
+import Controller.GaTauController;
 import Controller.KhachHangController;
+import Controller.KhuyenMaiController;
 import Controller.TauVaToaController;
-
+import Controller.ThongKeController;
+import Controller.BanVeController;
+import Controller.ChuyenTauController;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.sql.Time;
+import java.util.ArrayList;
 import java.util.List;
 public class Main extends JFrame {
 	private KhachHangPanel khp ;
@@ -23,10 +28,25 @@ public class Main extends JFrame {
 	private TauVaToaPanel tauvatoa;
 	private TauVaToaController tauvatoacontroller;
 	 
-	 
+	private GaTauPanel gatau;
+	private GaTauController gataucontroller;
 	 
 	private CardLayout cardLayout;
 	private JPanel content;
+	
+	private ChuyenTauPanel chuyenTauPanel;
+    private ChuyenTauController chuyenTauController;
+    
+    private KhuyenMaiPanel khuyenMaiPanel;
+    private KhuyenMaiController khuyenMaiController;
+    
+    private ThongKePanel tkp;
+    private ThongKeController tkController;
+    private BanVePanel banVePanel;
+    private BanVeController banVeController;
+    
+    private HoTroPanel hoTroPanel;
+    
 	String[] khachHangOptions = null;
 
 		String[] veOptions = {
@@ -311,7 +331,28 @@ public class Main extends JFrame {
 	    tauvatoa = new TauVaToaPanel();
 	    tauvatoacontroller = new TauVaToaController(tauvatoa);
 	    tauvatoa.setController(tauvatoacontroller);
+	    
+	    
+	    
+	    gatau = new GaTauPanel();
+	    gataucontroller = new GaTauController(gatau);
+	    gatau.setController(gataucontroller);;
 		
+	    chuyenTauPanel = new ChuyenTauPanel();
+	    chuyenTauController = new ChuyenTauController(chuyenTauPanel);
+	    chuyenTauPanel.setController(chuyenTauController);
+	    
+	    tkp = new ThongKePanel();
+        tkController = new ThongKeController(tkp);
+	    
+	    khuyenMaiPanel = new KhuyenMaiPanel();
+	    khuyenMaiController = new KhuyenMaiController(khuyenMaiPanel);
+	    khuyenMaiPanel.setController(khuyenMaiController);
+	    
+	    banVePanel = new BanVePanel();
+	    banVeController = new BanVeController(banVePanel);
+	    banVePanel.setController(banVeController);
+	    
 		setTitle("RailTicket Pro");
 		setSize(1400,800);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -340,10 +381,40 @@ public class Main extends JFrame {
         JButton btnThue = createNavButton("Quản lí Thuế", "img/seo-fill.png", traCuuOptions);
         JButton btnNhanVien = createNavButton("Quản lý nhân viên", "img/id-card-line.png", nhanVienOptions);
         JButton btnTauVaToa = createNavButton("Quản lí Tàu Và Toa", "img/subway.png",tauvatoa.getMenuOption(),"tauvatoa" );
+        JButton btnGaTau  =  createNavButton("Quản Lý Ga", "img/subway.png",gatau.getMenuOption(), "gatau");
         JButton btnChuyenTau = createNavButton("Quản lí chuyến tàu", "img/subway.png", chuyenTauOptions);
-        JButton btnKhuyenMai = createNavButton("Quản lí khuyến mãi", "img/discount.png", khuyenMaiOptions);
+        JButton btnKhuyenMai = createNavButton("Quản lí khuyến mãi", "img/discount.png", khuyenMaiPanel.getMenuOption(), "khuyenmai");
         JButton btnThongKe = createNavButton("Thống kê", "img/bar-chart-box-line.png", thongKeOptions);
-        JButton btnHoTro = createNavButton("Hỗ trợ", "img/customer-service-line.png", hoTroOptions);
+        
+     // 1. Khởi tạo panel Hỗ trợ trước
+        hoTroPanel = new HoTroPanel();
+
+        // 2. Tạo danh sách các Menu Item con và gán sự kiện click cho từng cái
+        List<JMenuItem> hoTroMenuItems = new ArrayList<>();
+
+        JMenuItem mniHuongDan = new JMenuItem("Hướng dẫn");
+        mniHuongDan.addActionListener(e -> {
+            show("hotro"); // Gọi hàm show của Main để hiển thị cục bự HoTroPanel
+            hoTroPanel.setSelectTab(0); // Gọi hàm chuyển tab nội bộ
+        });
+        hoTroMenuItems.add(mniHuongDan);
+
+        JMenuItem mniLienHe = new JMenuItem("Liên hệ");
+        mniLienHe.addActionListener(e -> {
+            show("hotro");
+            hoTroPanel.setSelectTab(1);
+        });
+        hoTroMenuItems.add(mniLienHe);
+
+        JMenuItem mniPhanHoi = new JMenuItem("Phản hồi");
+        mniPhanHoi.addActionListener(e -> {
+            show("hotro");
+            hoTroPanel.setSelectTab(2);
+        });
+        hoTroMenuItems.add(mniPhanHoi);
+
+        // 3. Truyền list này vào cái hàm createNavButton (phiên bản dùng List) của bạn
+        JButton btnHoTro = createNavButton("Hỗ trợ", "img/customer-service-line.png", hoTroMenuItems, "hotro");
         
         menuPanel.add(btnDashboard);
         menuPanel.add(Box.createVerticalStrut(5));
@@ -359,6 +430,8 @@ public class Main extends JFrame {
         menuPanel.add(Box.createVerticalStrut(5));
         menuPanel.add(btnTauVaToa);
         menuPanel.add(Box.createVerticalStrut(5));
+        menuPanel.add(btnGaTau);
+        menuPanel.add(Box.createVerticalStrut(5));   
         menuPanel.add(btnChuyenTau);
         menuPanel.add(Box.createVerticalStrut(5));
         menuPanel.add(btnKhuyenMai);
@@ -398,20 +471,32 @@ public class Main extends JFrame {
         content.add(nvp,"nhanvien");
         content.add(new VeTauPanel(),"banve");
         content.add(new HoaDonPanel(),"hoadon");
-        content.add(new KhuyenMaiPanel(),"khuyenmai");
+        content.add(khuyenMaiPanel, "khuyenmai");
         content.add(tauvatoa, "tauvatoa");
-        content.add(new ChuyenTauPanel(),"chuyentau");
+        content.add(gatau, "gatau");
+        content.add(chuyenTauPanel, "chuyentau");
         content.add(new ThuePanel(),"thue");
+        content.add(hoTroPanel, "hotro");
+        content.add(tkp, "thongke");
+        content.add(banVePanel, "panel_banve"); // Đặt tên card là "panel_banve"
         // ===== EVENT =====
         btnDashboard.addActionListener(e -> show("dashboard"));
         btnKhachHang.addActionListener(e -> show("khachhang"));
         btnNhanVien.addActionListener(e-> show("nhanvien"));
-        btnVe.addActionListener(e-> show("banve"));
+        btnVe.addActionListener(e-> show("panel_banve"));
         btnHoaDon.addActionListener(e-> show("hoadon"));
         btnKhuyenMai.addActionListener(e-> show("khuyenmai"));
         btnChuyenTau.addActionListener(e->show("chuyentau"));
         btnThue.addActionListener(e->show("thue"));
         btnTauVaToa.addActionListener(e->show("tauvatoa"));
+        btnGaTau.addActionListener(e->show("gatau"));
+        btnHoTro.addActionListener(e->show("hotro"));
+        btnThongKe.addActionListener(e -> {
+            show("thongke"); // Chuyển sang màn hình thống kê
+            if (tkController != null) {
+                tkController.loadStatistics(); // Tự động load dữ liệu/vẽ biểu đồ ngay khi bấm
+            }
+        });
         add(content, BorderLayout.CENTER);
         show("dashboard");
 	}
@@ -464,23 +549,7 @@ public class Main extends JFrame {
         cardLayout.show(content, name);
     }
 
-//    public static void main(String[] args) {
-//    	
-//    	
-//    	
-//    	
-//    	
-//    	try {
-//    		UIManager.setLookAndFeel(new FlatMacLightLaf());
-//			
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//    	
-//    	
-//        new Main().setVisible(true);
-//    }
-	
+
 	
 	
 }

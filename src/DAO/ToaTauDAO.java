@@ -27,6 +27,39 @@ public class ToaTauDAO {
         }
         return list;
     }
+    
+ // 🔹 Tìm toa theo mã toa
+    public ToaTau findById(String maToa) {
+        String sql = "SELECT * FROM ToaTau WHERE maToa = ?";
+        try (Connection conn = ConnectDB.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maToa);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return mapResultSet(rs);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+    
+    public String getMaxMaToa(String maTau) {
+        String sql = 
+            "SELECT TOP 1 maToa FROM ToaTau WHERE maTau = ? " +
+            "ORDER BY CAST(SUBSTRING(maToa, CHARINDEX('_TOA', maToa) + 4, LEN(maToa)) AS INT) DESC";
+        try (Connection conn = ConnectDB.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maTau);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getString("maToa");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
     // 🔹 Lấy toa theo mã tàu (QUAN TRỌNG)
     public List<ToaTau> findByMaTau(String maTau) {

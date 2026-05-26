@@ -2,19 +2,19 @@ package GUI;
 
 import java.util.*;
 import java.util.List;
-
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-
-import Entity.Thue; // Import Entity Thue
+import Controller.ThueController;
+import Entity.Thue;
 
 public class ThuePanel extends JPanel {
     
-    private Component component = new Component();
+    private Component component = new Component(); 
+    private ThueController controller; 
     
     private String[] thueOptions = {
         "Thêm loại thuế",
@@ -25,19 +25,29 @@ public class ThuePanel extends JPanel {
     
     private JTable table;
     private DefaultTableModel tableModel;
+    
+    private JLabel lblTongThue;
+    private JLabel lblDangApDung;
+    private JLabel lblNgungApDung;
+
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+    public void setController(ThueController controller) {
+        this.controller = controller;
+    }
 
     public JButton createButtonExcel(String Cmt) {
         JButton btn = new JButton(Cmt);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         String style = "arc:12; focusWidth:0; font: bold 13;";
         if (Cmt.contains("Nhập")) {
-            btn.setBackground(new Color(59, 130, 246)); // xanh dương
+            btn.setBackground(new Color(59, 130, 246)); 
         } else if (Cmt.contains("Tìm")) {
-            btn.setBackground(Color.gray); // nền xám
-            btn.setForeground(Color.BLACK); // chữ đen
+            btn.setBackground(Color.gray); 
+            btn.setForeground(Color.BLACK); 
             btn.setPreferredSize(new Dimension(60, 36));
         } else {
-            btn.setBackground(new Color(34, 197, 94)); // xanh lá
+            btn.setBackground(new Color(34, 197, 94)); 
         }
         btn.setPreferredSize(new Dimension(140, 36)); 
         btn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
@@ -47,7 +57,7 @@ public class ThuePanel extends JPanel {
         return btn;
     }
 
-    public JPanel createCardstatistical(String IconURL, String title, int value) {
+    public JPanel createCardstatistical(String IconURL, String title, String initialValue) {
         JPanel card = new JPanel(new BorderLayout(15, 0));
         ImageIcon icon = new ImageIcon(IconURL);
         Image img = icon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
@@ -61,16 +71,22 @@ public class ThuePanel extends JPanel {
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         titleLabel.setForeground(Color.GRAY);
 
-        JLabel valueLabel = new JLabel(String.valueOf(value));
+        JLabel valueLabel = new JLabel(initialValue);
         valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
         valueLabel.setForeground(Color.BLACK);
+
+        if (title.contains("Tổng")) lblTongThue = valueLabel;
+        else if (title.contains("Đang áp dụng")) lblDangApDung = valueLabel;
+        else if (title.contains("Ngừng áp dụng")) lblNgungApDung = valueLabel;
 
         textPanel.add(titleLabel);
         textPanel.add(valueLabel);
 
         card.add(iconLabel, BorderLayout.WEST);
         card.add(textPanel, BorderLayout.CENTER);
-
+        
+        // 🔥 FIX ĐỀU NHAU: Ép kích thước cố định cho Card Thống Kê
+        card.setPreferredSize(new Dimension(165, 55));
         card.putClientProperty("FlatLaf.style", "arc:10; border:10,10,10,10; background:#FFFFFF");
 
         return card;
@@ -80,7 +96,7 @@ public class ThuePanel extends JPanel {
         setLayout(new BorderLayout());
         setBackground(new Color(245, 247, 250));
 
-        // 2. Phần Header (Tiêu đề và Mô tả)
+        // --- Header Section ---
         JPanel header = new JPanel();
         header.setLayout(new BorderLayout());
         header.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -89,24 +105,36 @@ public class ThuePanel extends JPanel {
         JPanel headerL = new JPanel();
         headerL.setLayout(new BoxLayout(headerL, BoxLayout.Y_AXIS));
         headerL.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        headerL.setOpaque(false);
+        
         JPanel headerR = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
+        headerR.setOpaque(false);
 
-        // Cập nhật card thống kê cho Thuế
-        JPanel cardTongThue = createCardstatistical("img/user2.png", "Tổng loại thuế ", 5);
-        JPanel cardDangApDung = createCardstatistical("img/user2.png", "Đang áp dụng  ", 3);
-        JPanel cardNgungApDung = createCardstatistical("img/user2.png", "Ngừng áp dụng ", 2);
+        // Đọc ảnh icon từ thư mục img/ tương tự Khách Hàng
+        JPanel cardNgungApDung = createCardstatistical("img/expired.png", "Ngừng áp dụng ", "00");
+        JPanel cardDangApDung = createCardstatistical("img/valid.png", "Đang áp dụng  ", "00");
+        JPanel cardTongThue = createCardstatistical("img/equal.png", "Tổng loại thuế ", "00");
+
+        headerR.add(cardNgungApDung);
+        headerR.add(cardDangApDung);
+        headerR.add(cardTongThue);
 
         JPanel actionPanel = new JPanel(new BorderLayout());
+        actionPanel.setOpaque(false);
+        
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        searchPanel.setOpaque(false);
         JTextField txtSearch = new JTextField();
         txtSearch.setPreferredSize(new Dimension(400, 36));
         txtSearch.putClientProperty("FlatLaf.style", "arc:10");
+        txtSearch.putClientProperty("JTextField.placeholderText", "Nhập mã hoặc tên loại thuế...");
         JButton btnSearch = createButtonExcel("Tìm Kiếm");
 
         searchPanel.add(txtSearch);
         searchPanel.add(btnSearch);
 
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        rightPanel.setOpaque(false);
 
         JButton imports = createButtonExcel("Nhập file excel");
         JButton export = createButtonExcel("Xuất file excel");
@@ -116,10 +144,6 @@ public class ThuePanel extends JPanel {
 
         actionPanel.add(searchPanel, BorderLayout.WEST);
         actionPanel.add(rightPanel, BorderLayout.CENTER);
-
-        headerR.add(cardNgungApDung);
-        headerR.add(cardDangApDung);
-        headerR.add(cardTongThue);
 
         JLabel title = new JLabel("Quản lý thuế");
         title.setFont(new Font("Arial", Font.BOLD, 22));
@@ -138,26 +162,18 @@ public class ThuePanel extends JPanel {
 
         add(header, BorderLayout.NORTH);
 
-        // 3. Phần Main chứa Table
-        JPanel main = new JPanel();
-        main.setLayout(new BorderLayout());
+        // --- Main Section (Table) ---
+        JPanel main = new JPanel(new BorderLayout());
         main.setBackground(new Color(245, 247, 250));
-        main.putClientProperty("FlatLaf.style", "arc:20; border:10,10,10,10");
+        main.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         JPanel tableCard = new JPanel(new BorderLayout());
         tableCard.setBackground(Color.WHITE);
-        tableCard.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 220, 220)),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        ));
 
-        // Format Cột cho Thuế
-        String[] columns = {"Mã Thuế", "Tên Thuế", "Mức Thuế (%)", "Ngày Bắt Đầu", "Ngày Kết Thúc", "Trạng Thái"};
+        String[] columns = {"Mã Thuế", "Tên Thuế", "Mức Thuế", "Ngày Bắt Đầu", "Trạng Thái"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
-            public boolean isCellEditable(int row, int column) {
-                return false; 
-            }
+            public boolean isCellEditable(int row, int column) { return false; }
         };
 
         table = new JTable(tableModel);
@@ -182,22 +198,63 @@ public class ThuePanel extends JPanel {
 
         main.add(tableCard, BorderLayout.CENTER);
         add(main, BorderLayout.CENTER);
+
+        btnSearch.addActionListener(e -> {
+            if (controller != null) {
+                controller.timKiemThue(txtSearch.getText().trim());
+            }
+        });
     }
 
     public void setData(List<Thue> list) {
         tableModel.setRowCount(0);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        LocalDateTime bayGio = LocalDateTime.now();
         
         for (Thue t : list) {
             String ngayBD = (t.getNgayBatDau() != null) ? t.getNgayBatDau().format(formatter) : "";
-            String ngayKT = (t.getNgayKetThuc() != null) ? t.getNgayKetThuc().format(formatter) : "";
-            String trangThaiStr = t.isTrangThai() ? "Đang áp dụng" : "Ngừng áp dụng";
+            
+            String trangThaiStr = "Ngừng áp dụng";
+            if (t.isTrangThai()) {
+                if (t.getNgayBatDau() != null && bayGio.isBefore(t.getNgayBatDau())) {
+                    trangThaiStr = "Sắp diễn ra";
+                } else {
+                    trangThaiStr = "Đang áp dụng";
+                }
+            }
             
             tableModel.addRow(new Object[] {
-                t.getMaThue(), t.getTenThue(), t.getPhanTram(),
-                ngayBD, ngayKT, trangThaiStr
+                t.getMaThue(), 
+                t.getTenThue(), 
+                t.getPhanTram() + "%",
+                ngayBD, 
+                trangThaiStr
             });
         }
+        
+        // Tự động làm tươi các ô Card số liệu thống kê mỗi khi nhận danh sách mới
+        capNhatThongKeCoDinh(list);
+    }
+
+    public void capNhatThongKeCoDinh(List<Thue> allList) {
+        int dangApDung = 0;
+        int ngungApDung = 0;
+        LocalDateTime bayGio = LocalDateTime.now();
+
+        for (Thue t : allList) {
+            if (t.isTrangThai()) {
+                if (t.getNgayBatDau() != null && bayGio.isBefore(t.getNgayBatDau())) {
+                    // Sắp diễn ra - Có thể tính riêng hoặc gộp tùy ý bạn
+                } else {
+                    dangApDung++;
+                }
+            } else {
+                ngungApDung++;
+            }
+        }
+
+        if (lblDangApDung != null) lblDangApDung.setText(String.format("%02d", dangApDung));
+        if (lblNgungApDung != null) lblNgungApDung.setText(String.format("%02d", ngungApDung));
+        if (lblTongThue != null) lblTongThue.setText(String.format("%02d", allList.size()));
     }
 
     public DefaultTableModel getTableModel() {
@@ -206,26 +263,15 @@ public class ThuePanel extends JPanel {
 
     public List<JMenuItem> getMenuOption() {
         List<JMenuItem> submenu = new ArrayList<>();
-        
         for (String option : thueOptions) {
             JMenuItem it = new JMenuItem(option);
             it.addActionListener(e -> {
                 String text = ((JMenuItem) e.getSource()).getText();
                 switch (text) {
-                    case "Thêm loại thuế":
-                        themThue();
-                        break;
-                    case "Xóa loại thuế":
-                        xoaThue();
-                        break;
-                    case "Sửa thông tin":
-                        suaThue();
-                        break;
-                    case "Tra cứu thuế":
-                        traCuuThue();
-                        break;
-                    default:
-                        JOptionPane.showMessageDialog(null, "Chọn: " + text);
+                    case "Thêm loại thuế": themThue(); break;
+                    case "Xóa loại thuế": xoaThue(); break;
+                    case "Sửa thông tin": suaThue(); break;
+                    case "Tra cứu thuế": traCuuThue(); break;
                 }
             });
             submenu.add(it);
@@ -233,11 +279,10 @@ public class ThuePanel extends JPanel {
         return submenu;
     }
 
-    // Thêm thuế
     private void themThue() {
         String[] labels = {
             "Mã Thuế", "Tên Loại Thuế", "Mức Thuế (%)", 
-            "Ngày Bắt Đầu (dd/MM/yyyy)", "Ngày Kết Thúc (dd/MM/yyyy)", "Trạng Thái (Đang áp dụng/Ngừng)"
+            "Ngày Bắt Đầu (dd/MM/yyyy HH:mm)", "Trạng Thế (1: Áp dụng, 0: Ngừng)"
         };
         JTextField[] fields = new JTextField[labels.length];
         for (int i = 0; i < fields.length; i++) {
@@ -248,37 +293,41 @@ public class ThuePanel extends JPanel {
         JButton btnSave = new JButton("Lưu Thiết Lập");
 
         JDialog dialog = component.createDinamicForm(
-            "Thêm Loại Thuế", 
-            "Thiết Lập Thuế", 
-            "Vui lòng điền thông tin và mức thuế áp dụng", 
+            "Thêm Loại Thuế", "Thiết Lập Thuế", "Vui lòng điền thông tin và mức thuế áp dụng", 
             labels, fields, new JButton[]{btnCancel, btnSave}
         );
 
         btnCancel.addActionListener(e -> dialog.dispose());
 
         btnSave.addActionListener(e -> {
-            String maThue = fields[0].getText().trim();
-            String tenThue = fields[1].getText().trim();
-            String phanTram = fields[2].getText().trim();
-            String ngayBD = fields[3].getText().trim();
-            String ngayKT = fields[4].getText().trim();
-            String trangThai = fields[5].getText().trim();
+            try {
+                String maThue = fields[0].getText().trim();
+                String tenThue = fields[1].getText().trim();
+                double phanTram = Double.parseDouble(fields[2].getText().trim());
+                LocalDateTime ngayBD = LocalDateTime.parse(fields[3].getText().trim(), formatter);
+                boolean trangThai = fields[4].getText().trim().equals("1");
 
-            if (maThue.isEmpty() || tenThue.isEmpty() || phanTram.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog, "Mã Thuế, Tên và Mức phần trăm không được để trống!", "Lỗi", JOptionPane.WARNING_MESSAGE);
-                return;
+                if (maThue.isEmpty() || tenThue.isEmpty()) {
+                    JOptionPane.showMessageDialog(dialog, "Không được để trống thông tin!", "Lỗi", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                Thue newThue = new Thue(maThue, tenThue, phanTram, ngayBD, trangThai);
+                if (controller != null && controller.themThue(newThue)) {
+                    JOptionPane.showMessageDialog(dialog, "Thêm thiết lập thuế thành công!");
+                    controller.loadDataToTable(); 
+                    dialog.dispose();
+                } else {
+                    JOptionPane.showMessageDialog(dialog, "Lỗi khi thêm vào CSDL!", "Thất bại", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(dialog, "Vui lòng nhập đúng định dạng số và ngày (dd/MM/yyyy HH:mm)!", "Sai định dạng", JOptionPane.ERROR_MESSAGE);
             }
-
-            // Mock Data - Thêm thẳng vào bảng không cần DB
-            tableModel.addRow(new Object[]{maThue, tenThue, phanTram, ngayBD, ngayKT, trangThai});
-            JOptionPane.showMessageDialog(dialog, "Thêm thiết lập thuế thành công!");
-            dialog.dispose();
         });
 
         dialog.setVisible(true);
     }
 
-    // Xóa thuế
     private void xoaThue() {
         int selectedRow = table.getSelectedRow();
         if (selectedRow == -1) {
@@ -286,14 +335,19 @@ public class ThuePanel extends JPanel {
             return;
         }
 
-        int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xóa cấu hình thuế này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
-        if (confirm == JOptionPane.YES_OPTION) {
-            tableModel.removeRow(selectedRow);
-            JOptionPane.showMessageDialog(this, "Xóa thành công!");
+        String maThue = tableModel.getValueAt(selectedRow, 0).toString();
+        int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn ngừng áp dụng cấu hình thuế " + maThue + " không?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+        
+        if (confirm == JOptionPane.YES_OPTION && controller != null) {
+            if (controller.xoaThue(maThue)) {
+                JOptionPane.showMessageDialog(this, "Xóa (Ngừng áp dụng) thành công!");
+                controller.loadDataToTable();
+            } else {
+                JOptionPane.showMessageDialog(this, "Không thể xử lý dòng thuế này!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 
-    // Sửa thông tin thuế
     private void suaThue() {
         int selectedRow = table.getSelectedRow();
         if (selectedRow == -1) {
@@ -301,76 +355,63 @@ public class ThuePanel extends JPanel {
             return;
         }
 
-        // Lấy dữ liệu cũ từ Table
+        // Đọc dữ liệu cũ từ Table
         String maThue = tableModel.getValueAt(selectedRow, 0).toString();
         String tenThue = tableModel.getValueAt(selectedRow, 1).toString();
-        String phanTram = tableModel.getValueAt(selectedRow, 2).toString();
+        String phanTramRaw = tableModel.getValueAt(selectedRow, 2).toString().replace("%", "");
         String ngayBD = tableModel.getValueAt(selectedRow, 3).toString();
-        String ngayKT = tableModel.getValueAt(selectedRow, 4).toString();
-        String trangThai = tableModel.getValueAt(selectedRow, 5).toString();
+        String trangThaiRaw = tableModel.getValueAt(selectedRow, 4).toString();
 
-        JDialog dialog = new JDialog();
-        dialog.setTitle("Sửa cấu hình thuế");
-        dialog.setSize(420, 480);
-        dialog.setLocationRelativeTo(null);
-        dialog.setLayout(new FlowLayout());
+        // 🔥 ĐỒNG BỘ: Sử dụng lại component.createDinamicForm cho form Sửa nhìn cực kỳ chuyên nghiệp
+        String[] labels = {
+            "Tên Loại Thuế", "Mức Thuế (%)", 
+            "Ngày Bắt Đầu (dd/MM/yyyy HH:mm)", "Trạng Thái (1: Áp dụng, 0: Ngừng)"
+        };
+        JTextField[] fields = new JTextField[labels.length];
+        fields[0] = new JTextField(tenThue);
+        fields[1] = new JTextField(phanTramRaw);
+        fields[2] = new JTextField(ngayBD);
+        fields[3] = new JTextField(trangThaiRaw.contains("Đang") || trangThaiRaw.contains("Sắp") ? "1" : "0");
 
-        JLabel lbMaThue = new JLabel("Mã Thuế:");
-        JTextField txtMaThue = new JTextField(maThue, 25);
-        txtMaThue.setEditable(false);
-
-        JLabel lbTenThue = new JLabel("Tên Thuế:");
-        JTextField txtTenThue = new JTextField(tenThue, 25);
-
-        JLabel lbPhanTram = new JLabel("Mức Thuế (%):");
-        JTextField txtPhanTram = new JTextField(phanTram, 25);
-
-        JLabel lbNgayBD = new JLabel("Ngày Bắt Đầu:");
-        JTextField txtNgayBD = new JTextField(ngayBD, 25);
-
-        JLabel lbNgayKT = new JLabel("Ngày Kết Thúc:");
-        JTextField txtNgayKT = new JTextField(ngayKT, 25);
-        
-        JLabel lbTrangThai = new JLabel("Trạng Thái:");
-        JTextField txtTrangThai = new JTextField(trangThai, 25);
-
+        JButton btnCancel = new JButton("Hủy bỏ");
         JButton btnUpdate = new JButton("Cập nhật");
-        JButton btnCancel = new JButton("Hủy");
 
-        dialog.add(lbMaThue);
-        dialog.add(txtMaThue);
-        dialog.add(lbTenThue);
-        dialog.add(txtTenThue);
-        dialog.add(lbPhanTram);
-        dialog.add(txtPhanTram);
-        dialog.add(lbNgayBD);
-        dialog.add(txtNgayBD);
-        dialog.add(lbNgayKT);
-        dialog.add(txtNgayKT);
-        dialog.add(lbTrangThai);
-        dialog.add(txtTrangThai);
-        
-        dialog.add(btnUpdate);
-        dialog.add(btnCancel);
-
-        btnUpdate.addActionListener(ev -> {
-            tableModel.setValueAt(txtTenThue.getText(), selectedRow, 1);
-            tableModel.setValueAt(txtPhanTram.getText(), selectedRow, 2);
-            tableModel.setValueAt(txtNgayBD.getText(), selectedRow, 3);
-            tableModel.setValueAt(txtNgayKT.getText(), selectedRow, 4);
-            tableModel.setValueAt(txtTrangThai.getText(), selectedRow, 5);
-
-            JOptionPane.showMessageDialog(dialog, "Cập nhật thành công!");
-            dialog.dispose();
-        });
+        JDialog dialog = component.createDinamicForm(
+            "Sửa Cấu Hình Thuế", "Mã số thuế: " + maThue, "Vui lòng chỉnh sửa các thông số cần thiết", 
+            labels, fields, new JButton[]{btnCancel, btnUpdate}
+        );
 
         btnCancel.addActionListener(ev -> dialog.dispose());
+
+        btnUpdate.addActionListener(ev -> {
+            try {
+                Thue updatedThue = new Thue(
+                    maThue,
+                    fields[0].getText().trim(),
+                    Double.parseDouble(fields[1].getText().trim()),
+                    LocalDateTime.parse(fields[2].getText().trim(), formatter),
+                    fields[3].getText().trim().equals("1")
+                );
+
+                if (controller != null && controller.updateThue(updatedThue)) {
+                    JOptionPane.showMessageDialog(dialog, "Cập nhật thành công!");
+                    controller.loadDataToTable();
+                    dialog.dispose();
+                } else {
+                    JOptionPane.showMessageDialog(dialog, "Cập nhật thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(dialog, "Vui lòng nhập đúng định dạng số và ngày (dd/MM/yyyy HH:mm)!", "Lỗi định dạng", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
         dialog.setVisible(true);
     }
 
-    // Tra cứu thuế
     private void traCuuThue() {
         String keyword = JOptionPane.showInputDialog(this, "Nhập Tên hoặc Mã Thuế cần tìm:");
-        JOptionPane.showMessageDialog(table, "Đã ghi nhận từ khóa: " + keyword + " (Chưa kết nối DB)");
+        if (keyword != null && controller != null) {
+            controller.timKiemThue(keyword.trim());
+        }
     }
 }
