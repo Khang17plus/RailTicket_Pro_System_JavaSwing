@@ -8,10 +8,11 @@ import java.util.List;
 
 public class KhuyenMaiDAO {
 
-    // 🔹 Lấy tất cả chương trình khuyến mãi
+    // 🔹 Lấy tất cả chương trình khuyến mãi (ĐÃ THÊM SẮP XẾP CHUẨN SỐ)
     public List<KhuyenMai> getAll() {
         List<KhuyenMai> list = new ArrayList<>();
-        String sql = "SELECT * FROM KhuyenMai";
+        // Sắp xếp tăng dần theo phần số sau chữ "KM" để bảng hiển thị đẹp mắt
+        String sql = "SELECT * FROM KhuyenMai ORDER BY CAST(SUBSTRING(maKM, 3, LEN(maKM)) AS INT) ASC";
 
         try (Connection conn = ConnectDB.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -93,10 +94,10 @@ public class KhuyenMaiDAO {
         return false;
     }
 
-    // 🔹 Tìm kiếm khuyến mãi theo mã hoặc tên
+    // 🔹 Tìm kiếm khuyến mãi theo mã hoặc tên (ĐÃ THÊM SẮP XẾP CHUẨN SỐ)
     public List<KhuyenMai> searchKhuyenMai(String keyword) {
         List<KhuyenMai> list = new ArrayList<>();
-        String sql = "SELECT * FROM KhuyenMai WHERE maKM LIKE ? OR tenKM LIKE ?";
+        String sql = "SELECT * FROM KhuyenMai WHERE maKM LIKE ? OR tenKM LIKE ? ORDER BY CAST(SUBSTRING(maKM, 3, LEN(maKM)) AS INT) ASC";
 
         try (Connection conn = ConnectDB.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -131,7 +132,7 @@ public class KhuyenMaiDAO {
         return false;
     }
 
-    // 🔥 Hàm map ResultSet → Object KhuyenMai chuẩn nhất
+    // 🔹 Hàm map ResultSet → Object KhuyenMai chuẩn nhất
     private KhuyenMai mapResultSet(ResultSet rs) throws SQLException {
         KhuyenMai km = new KhuyenMai();
         km.setMaKM(rs.getString("maKM"));
@@ -154,14 +155,16 @@ public class KhuyenMaiDAO {
     }
 
     // =========================================================================
-    // 🔥 THÀNH PHẦN BỔ SUNG: LẤY MÃ KHUYẾN MÃI LỚN NHẤT HIỆN TẠI
+    // 🔥 THÀNH PHẦN SỬA ĐỔI CHÍNH: LẤY MÃ KHUYẾN MÃI LỚN NHẤT THEO KIỂU SỐ
     // =========================================================================
     /**
-     * Truy vấn mã Khuyến mãi lớn nhất (Ví dụ: KM005) trong DB phục vụ phát sinh mã tự động
+     * Tách chữ "KM", ép phần còn lại thành số để tìm mã thực tế lớn nhất,
+     * loại bỏ hoàn toàn lỗi so sánh chuỗi (Alphabetical) khi mã đạt mốc KM099, KM100,...
      */
     public String getMaxMaKhuyenMai() {
         String maxMa = "";
-        String sql = "SELECT MAX(maKM) FROM KhuyenMai";
+        // Cắt bỏ 2 ký tự đầu ("KM"), chuyển vế sau thành số nguyên, sắp xếp giảm dần để lấy hàng đầu tiên
+        String sql = "SELECT TOP 1 maKM FROM KhuyenMai ORDER BY CAST(SUBSTRING(maKM, 3, LEN(maKM)) AS INT) DESC";
 
         try (Connection conn = ConnectDB.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);

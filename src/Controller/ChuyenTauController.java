@@ -1,75 +1,104 @@
 package Controller;
 
+import java.util.List;
 import DAO.ChuyenTauDAO;
 import DAO.LichTrinhDungDoDAO;
 import Entity.ChuyenTau;
 import Entity.LichTrinhDungDo;
 import GUI.ChuyenTauPanel;
 
-import java.util.List;
-
 public class ChuyenTauController {
-    
     private ChuyenTauPanel view;
-    private ChuyenTauDAO chuyenTauDAO;
-    private LichTrinhDungDoDAO lichTrinhDAO;
-    
+    private ChuyenTauDAO chuyenTauDAO = new ChuyenTauDAO();
+    private LichTrinhDungDoDAO lichTrinhDAO = new LichTrinhDungDoDAO();
+
     public ChuyenTauController(ChuyenTauPanel view) {
         this.view = view;
-        this.chuyenTauDAO = new ChuyenTauDAO();
-        this.lichTrinhDAO = new LichTrinhDungDoDAO();
-        
-        // Gắn controller vào view để view có thể gọi ngược lại các sự kiện
-        this.view.setController(this);
-        
-        // Tải danh sách chuyến tàu lên bảng bên trái ngay khi mở form
+        // Tự động nạp dữ liệu chuyến tàu lên bảng bên trái ngay khi ứng dụng khởi chạy
         loadDanhSachChuyenTau();
     }
 
-    // ================= XỬ LÝ CHUYẾN TÀU (BẢNG TRÁI) =================
-
+    /**
+     * Tải toàn bộ danh sách chuyến tàu từ database và đẩy lên bảng bên trái (tableChuyenTau)
+     */
     public void loadDanhSachChuyenTau() {
-        List<ChuyenTau> list = chuyenTauDAO.getAll();
-        view.setChuyenTauData(list); 
-    }
-    
-    public boolean themChuyenTau(ChuyenTau ct) {
-        boolean result = chuyenTauDAO.insert(ct);
-        if (result) {
-            System.out.println("Thêm chuyến tàu thành công: " + ct.getMaChuyen());
+        List<ChuyenTau> list = chuyenTauDAO.getAllChuyenTau();
+        if (view != null) {
+            view.setChuyenTauData(list);
         }
-        return result;
-    }
-    
-    public boolean capNhatChuyenTau(ChuyenTau ct) {
-        return chuyenTauDAO.update(ct);
-    }
-    
-    public boolean xoaChuyenTau(String maChuyen) {
-        return chuyenTauDAO.delete(maChuyen);
     }
 
-    // ================= XỬ LÝ LỊCH TRÌNH DỪNG ĐỖ (BẢNG PHẢI) =================
-
-    // Hàm này sẽ được view gọi khi người dùng click vào 1 dòng ở bảng bên trái
+    /**
+     * Tải danh sách chặng dừng của một chuyến cụ thể và đẩy lên bảng bên phải (tableLichTrinh)
+     * Hàm này kích hoạt khi người dùng click chọn 1 dòng trên bảng chuyến tàu
+     */
     public void loadLichTrinhByMaChuyen(String maChuyen) {
-        List<LichTrinhDungDo> list = lichTrinhDAO.getByMaChuyen(maChuyen);
-        view.setLichTrinhData(list); 
-    }
-
-    public boolean themLichTrinh(LichTrinhDungDo lt) {
-        boolean result = lichTrinhDAO.insert(lt);
-        if (result) {
-            System.out.println("Thêm lịch trình dừng đỗ thành công!");
+        // 1. Lấy danh sách chặng dừng từ Database thông qua lớp DAO
+        List<LichTrinhDungDo> list = lichTrinhDAO.getLichTrinhByMaChuyen(maChuyen);
+        
+        // 2. Kiểm tra và đẩy dữ liệu sang giao diện để vẽ lại bảng bên phải
+        if (view != null) {
+            view.setLichTrinhData(list);
         }
-        return result;
     }
 
+    /**
+     * Gọi sang DAO lấy mã chuyến tàu tự sinh mới nhất kế tiếp (CH01, CH02,...)
+     */
+    public String layMaChuyenMoi() {
+        return chuyenTauDAO.getNextMaChuyen();
+    }
+
+    // =========================================================================
+    // PHẦN 1: CÁC HÀM XỬ LÝ CHUYẾN TÀU (BẢNG BÊN TRÁI)
+    // =========================================================================
+    
+    /**
+     * Xử lý thêm mới một chuyến tàu
+     */
+    public boolean themChuyenTau(ChuyenTau ct) {
+        return chuyenTauDAO.themChuyenTau(ct);
+    }
+
+    /**
+     * Xử lý cập nhật thông tin chuyến tàu
+     */
+    public boolean capNhatChuyenTau(ChuyenTau ct) {
+        return chuyenTauDAO.capNhatChuyenTau(ct);
+    }
+
+    /**
+     * Xử lý xóa một chuyến tàu dựa trên mã
+     */
+    public boolean xoaChuyenTau(String maChuyen) {
+        return chuyenTauDAO.xoaChuyenTau(maChuyen);
+    }
+
+    // =========================================================================
+    // PHẦN 2: CÁC HÀM XỬ LÝ LỊCH TRÌNH DỪNG ĐỖ (BẢNG BÊN PHẢI)
+    // =========================================================================
+    
+    /**
+     * Xử lý thêm mới một chặng dừng cho chuyến tàu
+     */
+    public boolean themLichTrinh(LichTrinhDungDo lt) {
+        // Gọi sang hàm thêm của LichTrinhDungDoDAO (Bạn nhớ bổ sung hàm này trong DAO nếu chưa có nhé)
+        return lichTrinhDAO.themLichTrinh(lt);
+    }
+
+    /**
+     * Xử lý sửa thông tin chặng dừng
+     */
     public boolean capNhatLichTrinh(LichTrinhDungDo lt) {
-        return lichTrinhDAO.update(lt);
+        // Gọi sang hàm cập nhật của LichTrinhDungDoDAO
+        return lichTrinhDAO.capNhatLichTrinh(lt);
     }
 
+    /**
+     * Xử lý xóa một chặng dừng cụ thể của một chuyến tàu
+     */
     public boolean xoaLichTrinh(String maChuyen, String maGa) {
-        return lichTrinhDAO.delete(maChuyen, maGa);
+        // Gọi sang hàm xóa kết hợp 2 khóa chính (maChuyen, maGa) trong LichTrinhDungDoDAO
+        return lichTrinhDAO.xoaLichTrinh(maChuyen, maGa);
     }
 }

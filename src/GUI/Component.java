@@ -72,14 +72,13 @@ public class Component extends JFrame {
 
       
     
-    public JDialog createDinamicForm(String titleDialog, String headerTitle, String subtitle, String labels[], JTextField[] fields, JButton[] buttons) {
+	public JDialog createDinamicForm(String titleDialog, String headerTitle, String subtitle, String labels[], JComponent[] fields, JButton[] buttons) {
         JDialog form = new JDialog();
         form.setTitle(titleDialog);
         form.setModal(true);
         form.setResizable(false);
         form.setLayout(new BorderLayout());
         
-
         // Panel chính với Padding lớn tạo không gian thoáng
         JPanel container = new JPanel(new BorderLayout(0, 25));
         container.setBorder(BorderFactory.createEmptyBorder(30, 35, 30, 35));
@@ -111,10 +110,14 @@ public class Component extends JFrame {
             JLabel lbl = new JLabel(labels[i]);
             lbl.putClientProperty("FlatLaf.style", "font: 13; foreground: #404040");
 
-            // Styling cho TextField
+            // Styling chung cho JComponent (cả TextField và ComboBox)
             fields[i].setPreferredSize(new Dimension(380, 38));
-            fields[i].putClientProperty("JTextField.placeholderText", "Nhập " + labels[i].toLowerCase() + "...");
             fields[i].putClientProperty("FlatLaf.style", "arc: 10; focusWidth: 2");
+
+            // Kiểm tra nếu là JTextField thì mới set placeholder
+            if (fields[i] instanceof JTextField) {
+                ((JTextField) fields[i]).putClientProperty("JTextField.placeholderText", "Nhập " + labels[i].toLowerCase() + "...");
+            }
 
             group.add(lbl, BorderLayout.NORTH);
             group.add(fields[i], BorderLayout.CENTER);
@@ -150,7 +153,6 @@ public class Component extends JFrame {
         
         return form;
     }
-
 //    public static void main(String[] args) {
 //        // Chạy ứng dụng
 //        SwingUtilities.invokeLater(() -> new Component());

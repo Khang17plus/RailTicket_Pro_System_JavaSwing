@@ -3,9 +3,11 @@ package GUI;
 import java.util.*;
 import java.util.List;
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
+import java.io.File;
 
 import Controller.NhanVienController;
 import Entity.NhanVien;
@@ -19,7 +21,6 @@ public class NhanVienPanel extends JPanel {
     private JLabel lblNghieViec;
     private JLabel lblTongNhanVien;
 
-    // 🔥 Đã loại bỏ lựa chọn "Xóa nhân viên"
     private String[] nhanVienOptions = {
         "Thêm nhân viên",
         "Sửa thông tin"
@@ -119,9 +120,9 @@ public class NhanVienPanel extends JPanel {
         // Grid 1 hàng 3 cột cho gọn gàng và cân đối giao diện nhân viên
         JPanel headerR = new JPanel(new GridLayout(1, 3, 15, 0));
         headerR.setOpaque(false);
-        headerR.add(createCardstatistical("img/expired.png", "Nghỉ việc", "00"));      
-        headerR.add(createCardstatistical("img/valid.png", "Đang làm việc", "00"));
-        headerR.add(createCardstatistical("img/equal.png", "Tổng nhân viên", "00"));
+        headerR.add(createCardstatistical("img/user2.png", "Nghỉ việc", "00"));      
+        headerR.add(createCardstatistical("img/user2.png", "Đang làm việc", "00"));
+        headerR.add(createCardstatistical("img/user2.png", "Tổng nhân viên", "00"));
 
         // --- ACTION PANEL (Search & Excel) ---
         JPanel actionPanel = new JPanel(new BorderLayout());
@@ -140,8 +141,12 @@ public class NhanVienPanel extends JPanel {
 
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         rightPanel.setOpaque(false);
-        rightPanel.add(createButtonExcel("Xuất file excel"));
-        rightPanel.add(createButtonExcel("Nhập file excel"));
+        
+        // Khởi tạo các nút Excel
+        JButton btnExport = createButtonExcel("Xuất file excel");
+        JButton btnImport = createButtonExcel("Nhập file excel");
+        rightPanel.add(btnExport);
+        rightPanel.add(btnImport);
 
         actionPanel.add(searchPanel, BorderLayout.WEST);
         actionPanel.add(rightPanel, BorderLayout.CENTER);
@@ -183,6 +188,8 @@ public class NhanVienPanel extends JPanel {
         main.add(tableCard, BorderLayout.CENTER);
         add(main, BorderLayout.CENTER);
         
+        // --- ĐĂNG KÝ SỰ KIỆN NÚT BẤM ---
+        
         // Sự kiện tìm kiếm nhân viên
         btnSearch.addActionListener(e -> {
             String keyword = txtSearch.getText().trim();
@@ -190,6 +197,72 @@ public class NhanVienPanel extends JPanel {
                 controller.timKiemNhanVien(keyword);
             }
         });
+
+        // 🔥 Sự kiện: XUẤT FILE EXCEL
+        btnExport.addActionListener(e -> {
+            if (controller == null) return;
+            
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Chọn nơi lưu file Danh Sách Nhân Viên");
+            fileChooser.setFileFilter(new FileNameExtensionFilter("Excel Files (*.xlsx)", "xlsx"));
+            fileChooser.setSelectedFile(new File("DanhSachNhanVien.xlsx"));
+            
+            int userSelection = fileChooser.showSaveDialog(this);
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                File fileToSave = fileChooser.getSelectedFile();
+                String filePath = fileToSave.getAbsolutePath();
+                if (!filePath.endsWith(".xlsx")) {
+                    filePath += ".xlsx";
+                }
+                
+                // Thu thập dữ liệu hiện có trên JTable truyền vào hàm Export
+                List<NhanVien> currentList = getDataFromTable();
+                
+                if (controller.exportToExcel(filePath, currentList)) {
+                    JOptionPane.showMessageDialog(this, "Xuất dữ liệu Excel thành công!");
+                } else {
+                    JOptionPane.showMessageDialog(this, "Xuất dữ liệu Excel thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        // 🔥 Sự kiện: NHẬP FILE EXCEL
+        btnImport.addActionListener(e -> {
+            if (controller == null) return;
+
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Chọn file Excel Nhân Viên cần Import");
+            fileChooser.setFileFilter(new FileNameExtensionFilter("Excel Files (*.xlsx, *.xls)", "xlsx", "xls"));
+
+            int userSelection = fileChooser.showOpenDialog(this);
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                File fileToOpen = fileChooser.getSelectedFile();
+                
+                // Gọi xử lý tầng nghiệp vụ nghiệp vụ và nhận thông báo kết quả trả về
+                String resultMessage = controller.importExcel(fileToOpen.getAbsolutePath());
+                JOptionPane.showMessageDialog(this, resultMessage, "Kết quả Nhập Excel", JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+    }
+
+    /**
+     * GOM DỮ LIỆU HIỆN TẠI TRÊN TABLE (Dùng cho luồng Export Excel chuẩn)
+     */
+    private List<NhanVien> getDataFromTable() {
+        List<NhanVien> list = new ArrayList<>();
+        for (int i = 0; i < tableModel.getRowCount(); i++) {
+            NhanVien nv = new NhanVien();
+            nv.setMaNV(tableModel.getValueAt(i, 0).toString());
+            nv.setTenNV(tableModel.getValueAt(i, 1).toString());
+            nv.setChucVu(tableModel.getValueAt(i, 2).toString());
+            nv.setSoDienThoai(tableModel.getValueAt(i, 3).toString());
+            
+            String strTrangThai = tableModel.getValueAt(i, 4).toString();
+            nv.setTrangThai(strTrangThai.equals("Đang làm việc"));
+            
+            list.add(nv);
+        }
+        return list;
     }
 
     // Đổ dữ liệu Nhân viên lên JTable
@@ -199,7 +272,7 @@ public class NhanVienPanel extends JPanel {
             String trangThaiHienThi = nv.isTrangThai() ? "Đang làm việc" : "Nghỉ việc";
 
             tableModel.addRow(new Object[]{
-                nv.getMaNV(),               
+                nv.getMaNV(),                
                 nv.getTenNV(),              
                 nv.getChucVu(),             
                 nv.getSoDienThoai(),              
@@ -244,7 +317,6 @@ public class NhanVienPanel extends JPanel {
         return submenu;
     }
 
-    // 🔥 ĐÃ ĐỒNG BỘ: Tự phát sinh mã tự động và khóa Edit ô Mã NV
     private void themNhanVien() {
         if (controller == null) {
             JOptionPane.showMessageDialog(this, "Hệ thống chưa kết nối dữ liệu bộ điều khiển!");
@@ -255,13 +327,11 @@ public class NhanVienPanel extends JPanel {
         JTextField[] fields = new JTextField[labels.length];
         for (int i = 0; i < fields.length; i++) fields[i] = new JTextField();
 
-        // Tự phát sinh mã thông qua Controller và đưa vào textfield
         String maTuSinh = controller.phatSinhMaTuDong();
         fields[0].setText(maTuSinh);
-        fields[0].setEditable(false); // Khóa lại không cho chỉnh sửa mã
+        fields[0].setEditable(false); 
         fields[0].setBackground(new Color(240, 240, 240));
 
-        // Mặc định ô trạng thái nhập là 1 (Đang đi làm) khi thêm mới
         fields[4].setText("1");
 
         JButton btnCancel = new JButton("Hủy");
@@ -317,7 +387,6 @@ public class NhanVienPanel extends JPanel {
             }
         }
         
-        // Đổ trạng thái hiện tại từ text hiển thị sang số "1" hoặc "0" để sửa
         String currentStatusText = tableModel.getValueAt(row, 4).toString();
         fields[4].setText(currentStatusText.equals("Đang làm việc") ? "1" : "0");
         

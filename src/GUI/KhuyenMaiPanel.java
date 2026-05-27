@@ -33,6 +33,10 @@ public class KhuyenMaiPanel extends JPanel {
     private JTable table;
     private DefaultTableModel tableModel;
 
+    // --- THÀNH PHẦN BỔ SUNG: Khai báo các nút bấm để gắn sự kiện Excel ---
+    private JButton btnExportExcel;
+    private JButton btnImportExcel;
+
     public void setController(KhuyenMaiController controller) {
         this.controller = controller;
     }
@@ -127,9 +131,9 @@ public class KhuyenMaiPanel extends JPanel {
         JPanel headerR = new JPanel(new GridLayout(1, 4, 15, 0));
         headerR.setOpaque(false);
         headerR.add(createCardstatistical("img/expired.png", "Hết hạn", "00"));      
-        headerR.add(createCardstatistical("img/valid.png", "Đang áp dụng", "08"));
-        headerR.add(createCardstatistical("img/time.png", "Sắp diễn ra", "03"));
-        headerR.add(createCardstatistical("img/equal.png", "Tổng chiến dịch", "42"));
+        headerR.add(createCardstatistical("img/valid.png", "Đang áp dụng", "00"));
+        headerR.add(createCardstatistical("img/time.png", "Sắp diễn ra", "00"));
+        headerR.add(createCardstatistical("img/equal.png", "Tổng chiến dịch", "00"));
 
         // --- ACTION PANEL (Search & Excel) ---
         JPanel actionPanel = new JPanel(new BorderLayout());
@@ -146,10 +150,15 @@ public class KhuyenMaiPanel extends JPanel {
         searchPanel.add(txtSearch);
         searchPanel.add(btnSearch);
 
+        // --- THÀNH PHẦN SỬA ĐỔI: Khởi tạo biến rõ ràng cho nút Excel ---
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         rightPanel.setOpaque(false);
-        rightPanel.add(createButtonExcel("Xuất file excel"));
-        rightPanel.add(createButtonExcel("Nhập file excel"));
+        
+        btnExportExcel = createButtonExcel("Xuất file excel");
+        btnImportExcel = createButtonExcel("Nhập file excel");
+        
+        rightPanel.add(btnExportExcel);
+        rightPanel.add(btnImportExcel);
 
         actionPanel.add(searchPanel, BorderLayout.WEST);
         actionPanel.add(rightPanel, BorderLayout.CENTER);
@@ -191,31 +200,85 @@ public class KhuyenMaiPanel extends JPanel {
         main.add(tableCard, BorderLayout.CENTER);
         add(main, BorderLayout.CENTER);
         
-        // Sự kiện tìm kiếm
+        // --- ĐĂNG KÝ CÁC SỰ KIỆN LẮNG NGHE (LISTENERS) ---
+        
+        // 1. Sự kiện tìm kiếm
         btnSearch.addActionListener(e -> {
             String keyword = txtSearch.getText().trim();
             if (controller != null) {
                 controller.timKiemKhuyenMai(keyword);
             }
         });
+
+        // 2. THÀNH PHẦN BỔ SUNG: Sự kiện xuất file Excel
+        btnExportExcel.addActionListener(e -> {
+            if (controller == null) return;
+            
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Chọn vị trí lưu file Excel Khuyến Mãi");
+            fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Excel Files (*.xlsx)", "xlsx"));
+            
+            int userSelection = fileChooser.showSaveDialog(this);
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                java.io.File fileToSave = fileChooser.getSelectedFile();
+                
+                // Ép đuôi file luôn là .xlsx
+                if (!fileToSave.getAbsolutePath().endsWith(".xlsx")) {
+                    fileToSave = new java.io.File(fileToSave.getAbsolutePath() + ".xlsx");
+                }
+                
+                if (controller.exportToExcel(fileToSave)) {
+                    JOptionPane.showMessageDialog(this, "Xuất file Excel khuyến mãi thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Có lỗi xảy ra khi ghi file Excel!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        // 3. THÀNH PHẦN BỔ SUNG: Sự kiện nhập file Excel
+        btnImportExcel.addActionListener(e -> {
+            if (controller == null) return;
+            
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Chọn file Excel Khuyến Mãi để nạp");
+            fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Excel Files (*.xlsx)", "xlsx"));
+            
+            int userSelection = fileChooser.showOpenDialog(this);
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                java.io.File fileToOpen = fileChooser.getSelectedFile();
+                
+                // Gọi sang hàm xử lý import từ Controller
+                int rowsImported = controller.importFromExcel(fileToOpen);
+                
+                if (rowsImported > 0) {
+                    JOptionPane.showMessageDialog(this, "Nhập thành công " + rowsImported + " chương trình mới từ Excel!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Không có dữ liệu mới nào được thêm vào hệ thống!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+                }
+            }
+        });
     }
 
+    // 🔥 ĐÃ SỬA ĐỔI: Đồng bộ hóa logic hiển thị bảng JTable (Gom Tạm Ngưng về Hết Hạn)
     public void setData(List<KhuyenMai> list) {
         tableModel.setRowCount(0);
         java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
         java.time.LocalDateTime bayGio = java.time.LocalDateTime.now();
 
         for (KhuyenMai km : list) {
-            String trangThaiHienThi = "Tạm ngưng"; 
+            String trangThaiHienThi = ""; 
             
-            if (km.isTrangThai()) {
-                if (km.getNgayBatDau() != null && bayGio.isBefore(km.getNgayBatDau())) {
-                    trangThaiHienThi = "Sắp diễn ra";
-                } else if (km.getNgayKetThuc() != null && bayGio.isAfter(km.getNgayKetThuc())) {
-                    trangThaiHienThi = "Hết hạn";
-                } else {
-                    trangThaiHienThi = "Đang áp dụng";
-                }
+            // Nếu bị tắt trạng thái HOẶC đã quá ngày kết thúc -> Gom hết về Hết hạn
+            if (!km.isTrangThai() || (km.getNgayKetThuc() != null && bayGio.isAfter(km.getNgayKetThuc()))) {
+                trangThaiHienThi = "Hết hạn";
+            } 
+            // Nếu bật trạng thái nhưng chưa tới ngày chạy -> Sắp diễn ra
+            else if (km.getNgayBatDau() != null && bayGio.isBefore(km.getNgayBatDau())) {
+                trangThaiHienThi = "Sắp diễn ra";
+            } 
+            // Thỏa mãn mọi điều kiện -> Đang áp dụng
+            else {
+                trangThaiHienThi = "Đang áp dụng";
             }
 
             tableModel.addRow(new Object[]{
@@ -231,10 +294,10 @@ public class KhuyenMaiPanel extends JPanel {
     }
 
     public void updateThongKeCoDinh(List<KhuyenMai> allList) {
-        // Giữ tên hàm gốc để tương thích ngược nếu bạn gọi ở Main
         capNhatThongKeCoDinh(allList);
     }
 
+    // 🔥 ĐÃ SỬA ĐỔI: Đồng bộ hóa logic đếm trên các Card CardStatistical khớp 100% với bảng
     public void capNhatThongKeCoDinh(List<KhuyenMai> allList) {
         int dangApDung = 0;
         int sapDienRa = 0;
@@ -244,14 +307,13 @@ public class KhuyenMaiPanel extends JPanel {
         java.time.LocalDateTime bayGio = java.time.LocalDateTime.now();
 
         for (KhuyenMai km : allList) {
-            if (km.isTrangThai()) {
-                if (km.getNgayBatDau() != null && bayGio.isBefore(km.getNgayBatDau())) {
-                    sapDienRa++;
-                } else if (km.getNgayKetThuc() != null && bayGio.isAfter(km.getNgayKetThuc())) {
-                    hetHan++; 
-                } else {
-                    dangApDung++;
-                }
+            // Logic đếm bê nguyên từ hàm hiển thị bảng xuống để cam đoan khớp số liệu
+            if (!km.isTrangThai() || (km.getNgayKetThuc() != null && bayGio.isAfter(km.getNgayKetThuc()))) {
+                hetHan++;
+            } else if (km.getNgayBatDau() != null && bayGio.isBefore(km.getNgayBatDau())) {
+                sapDienRa++;
+            } else {
+                dangApDung++;
             }
         }
 
@@ -277,22 +339,18 @@ public class KhuyenMaiPanel extends JPanel {
         }
         return submenu;
     }
-
-    // =========================================================================
-    // THÀNH PHẦN SỬA ĐỔI CHÍNH: TỰ ĐỘNG PHÁT SINH MÃ KHI MỞ FORM THÊM
-    // =========================================================================
+    
     private void themKhuyenMai() {
         String[] labels = {"Mã KM", "Tên KM", "Giá trị (%)", "Loại KM", "Ngày BĐ (dd/MM/yyyy HH:mm)", "Ngày KT (dd/MM/yyyy HH:mm)"};
         JTextField[] fields = new JTextField[labels.length];
         for (int i = 0; i < fields.length; i++) fields[i] = new JTextField();
 
-        // 🔥 THỰC HIỆN SINH MÃ TỰ ĐỘNG:
         if (controller != null) {
             String maTuDong = controller.phatSinhMaTuDong();
-            fields[0].setText(maTuDong); // Đổ mã tự động sinh vào ô Mã KM
+            fields[0].setText(maTuDong); 
         }
-        fields[0].setEditable(false); // Khóa không cho sửa mã bừa bãi
-        fields[0].setBackground(new Color(240, 240, 240)); // Đổi màu nền sang xám nhẹ chỉ thị trạng thái khóa
+        fields[0].setEditable(false); 
+        fields[0].setBackground(new Color(240, 240, 240)); 
 
         JButton btnCancel = new JButton("Hủy");
         JButton btnSave = new JButton("Lưu");

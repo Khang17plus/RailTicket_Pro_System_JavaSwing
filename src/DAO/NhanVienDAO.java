@@ -28,7 +28,7 @@ public class NhanVienDAO {
         return list;
     }
 
-    // 🔹 Tìm theo mã NV (Dùng cho luồng chính)
+    // 🔹 Tìm theo mã NV
     public NhanVien findById(String maNV) {
         String sql = "SELECT * FROM NhanVien WHERE maNV = ?";
 
@@ -48,7 +48,6 @@ public class NhanVienDAO {
         return null;
     }
 
-    // Hàm gán giùm để sửa triệt để lỗi "undefined method" bên LoginController
     public NhanVien getNhanVienTheoMa(String maNV) {
         return findById(maNV);
     }
@@ -64,7 +63,7 @@ public class NhanVienDAO {
             ps.setString(2, nv.getTenNV());
             ps.setString(3, nv.getChucVu()); 
             ps.setString(4, nv.getSoDienThoai());
-            ps.setBoolean(5, nv.isTrangThai()); // Mặc định true (Đang làm việc) khi thêm mới
+            ps.setBoolean(5, nv.isTrangThai()); 
 
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
@@ -74,7 +73,7 @@ public class NhanVienDAO {
         return false;
     }
 
-    // 🔹 Cập nhật thông tin nhân viên (Bao gồm cả việc cập nhật trạng thái Nghỉ việc)
+    // 🔹 Cập nhật thông tin nhân viên
     public boolean update(NhanVien nv) {
         String sql = "UPDATE NhanVien SET tenNV=?, chucVu=?, soDienThoai=?, trangThai=? WHERE maNV=?";
 
@@ -84,7 +83,7 @@ public class NhanVienDAO {
             ps.setString(1, nv.getTenNV());
             ps.setString(2, nv.getChucVu());
             ps.setString(3, nv.getSoDienThoai());
-            ps.setBoolean(4, nv.isTrangThai()); // Sửa trạng thái ở đây để cho nghỉ việc
+            ps.setBoolean(4, nv.isTrangThai()); 
             ps.setString(5, nv.getMaNV());
 
             return ps.executeUpdate() > 0;
@@ -107,10 +106,8 @@ public class NhanVienDAO {
             ps.setString(2, searchPattern);
 
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs != null) {
-                    while (rs.next()) {
-                        list.add(mapResultSet(rs));
-                    }
+                while (rs.next()) {
+                    list.add(mapResultSet(rs));
                 }
             }
         } catch (SQLException e) {
@@ -122,23 +119,21 @@ public class NhanVienDAO {
     // 🔥 Hàm duy nhất map ResultSet → Object NhanVien
     private NhanVien mapResultSet(ResultSet rs) throws SQLException {
         NhanVien nv = new NhanVien();
-        
         nv.setMaNV(rs.getString("maNV"));
         nv.setTenNV(rs.getString("tenNV"));
         nv.setChucVu(rs.getString("chucVu"));
         nv.setSoDienThoai(rs.getString("soDienThoai"));
         nv.setTrangThai(rs.getBoolean("trangThai"));
-        
         return nv;
     }
 
-    // 🔹 Hàm đếm số lượng phục vụ hiển thị thẻ thống kê (Tổng / Đang làm / Nghỉ)
+    // 🔹 Hàm đếm số lượng phục vụ hiển thị thẻ thống kê
     public int countNhanVien(String type) {
         String sql = "SELECT COUNT(*) FROM NhanVien";
         if (type.equals("1")) {
-            sql += " WHERE trangThai = 1"; // Đang làm việc
+            sql += " WHERE trangThai = 1"; 
         } else if (type.equals("0")) {
-            sql += " WHERE trangThai = 0"; // Nghỉ việc
+            sql += " WHERE trangThai = 0"; 
         }
 
         try (Connection conn = ConnectDB.getInstance().getConnection();
@@ -154,22 +149,21 @@ public class NhanVienDAO {
     }
 
     // =========================================================================
-    // 🔥 LẤY MÃ NHÂN VIÊN LỚN NHẤT HIỆN TẠI (ĐỂ TỰ SINH MÃ)
+    // 🔥 LẤY MÃ LỚN NHẤT ĐÃ ĐƯỢC TỐI ƯU SẮP XẾP SỐ (Dành cho SQL Server)
     // =========================================================================
     public String getMaxMaNhanVien() {
-        String maxMa = "";
-        String sql = "SELECT MAX(maNV) FROM NhanVien";
+        String sql = "SELECT TOP 1 maNV FROM NhanVien ORDER BY CAST(SUBSTRING(maNV, 3, LEN(maNV)) AS INT) DESC";
 
         try (Connection conn = ConnectDB.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
             if (rs.next()) {
-                maxMa = rs.getString(1);
+                return rs.getString("maNV");
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return maxMa;
+        return null;
     }
 }
