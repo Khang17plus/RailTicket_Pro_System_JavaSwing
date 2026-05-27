@@ -2,19 +2,21 @@ package Controller;
 
 import java.util.Map;
 import DAO.ThongKeDAO;
-import GUI.DashboardPanel; // Đã đổi từ TrangChuPanel sang DashboardPanel
+import GUI.DashboardPanel; 
 
 public class TrangChuController {
-    private DashboardPanel view; // Đã đổi kiểu dữ liệu tương thích với giao diện
-    private ThongKeDAO thongKeDAO = new ThongKeDAO();
+    private DashboardPanel view; 
+    private ThongKeDAO thongKeDAO;
 
     public TrangChuController(DashboardPanel view) {
         this.view = view;
+        this.thongKeDAO = new ThongKeDAO();
+        // Vẫn gọi lần đầu để load khi form Main vừa khởi động
         loadThongKeHeThong();
     }
 
     /**
-     * Hàm lấy toàn bộ dữ liệu thật từ DB và bắn lên UI
+     * Lấy toàn bộ dữ liệu thật từ DB và bắn lên UI
      */
     public void loadThongKeHeThong() {
         if (view == null) return;

@@ -1,19 +1,18 @@
+// ======================== BanVePanel.java (Đã sửa lỗi sơ đồ ghế & đồng bộ) ========================
 package GUI;
 
 import Controller.BanVeController;
-import Entity.ChuyenTau;
-import Entity.GaTau;
-import Entity.KhachHang;
-import Entity.ToaTau;
-import Entity.VeTau;
+import Entity.*;
 import com.toedter.calendar.JDateChooser;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
+import java.util.*;
 import java.util.List;
 import javax.swing.*;
+import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 
 public class BanVePanel extends JPanel {
@@ -30,643 +29,291 @@ public class BanVePanel extends JPanel {
     private ChuyenTau currentChuyen;
     private String currentMaToa;
     private List<ChuyenTau> listChuyenTemp = new ArrayList<>();
-    private List<GaTau> listGaTemp = new ArrayList<>();
 
-    public BanVePanel() {
-        initUI();
-    }
+    public BanVePanel() { initUI(); }
 
     public void setController(BanVeController controller) {
         this.controller = controller;
-        // Load danh sách ga từ database khi controller được set
-        if (this.controller != null) {
-            this.controller.loadDanhSachGa();
-        }
+        if (this.controller != null) this.controller.loadDanhSachGa();
     }
 
     private void initUI() {
-        setLayout(new BorderLayout());
-        setBackground(Color.WHITE);
-
-        // --- Header ---
+        setLayout(new BorderLayout()); setBackground(Color.WHITE);
         JPanel pnlHeader = new JPanel(new BorderLayout());
         pnlHeader.setBackground(Color.WHITE);
-        pnlHeader.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        
+        pnlHeader.setBorder(BorderFactory.createEmptyBorder(10,20,10,20));
         JLabel lblTitle = new JLabel("BÁN VÉ TÀU HỎA");
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        lblTitle.setForeground(new Color(30, 64, 175));
-        JLabel lblDesc = new JLabel("Chọn chuyến – chọn chỗ – thanh toán nhanh chóng");
-        lblDesc.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        
-        JPanel pnlTitleInfo = new JPanel(new GridLayout(2, 1));
-        pnlTitleInfo.setBackground(Color.WHITE);
-        pnlTitleInfo.add(lblTitle);
-        pnlTitleInfo.add(lblDesc);
-        pnlHeader.add(pnlTitleInfo, BorderLayout.WEST);
+        lblTitle.setFont(new Font("Segoe UI",Font.BOLD,24));
+        lblTitle.setForeground(new Color(30,64,175));
+        pnlHeader.add(lblTitle, BorderLayout.WEST);
         add(pnlHeader, BorderLayout.NORTH);
 
-        // --- Khu vực tìm kiếm ---
-        JPanel pnlSearch = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
+        JPanel pnlSearch = new JPanel(new FlowLayout(FlowLayout.LEFT,15,10));
         pnlSearch.setBackground(Color.WHITE);
         pnlSearch.setBorder(BorderFactory.createTitledBorder("Tìm kiếm chuyến tàu"));
-
-        // ComboBox ga đi và ga đến (sẽ load từ DB)
-        cbGaDi = new JComboBox<>();
-        cbGaDen = new JComboBox<>();
-        cbGaDi.setPreferredSize(new Dimension(250, 30));
-        cbGaDen.setPreferredSize(new Dimension(250, 30));
-        
-        // DateChooser - mặc định là ngày mai (để có dữ liệu mẫu)
+        cbGaDi = new JComboBox<>(); cbGaDen = new JComboBox<>();
+        cbGaDi.setPreferredSize(new Dimension(250,30)); cbGaDen.setPreferredSize(new Dimension(250,30));
         dateChooser = new JDateChooser();
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.DAY_OF_MONTH, 1); // Ngày mai
-        dateChooser.setDate(cal.getTime());
-        dateChooser.setDateFormatString("dd/MM/yyyy");
-        dateChooser.setPreferredSize(new Dimension(150, 30));
-
-        JButton btnTim = createButton("🔍 Tìm chuyến", new Color(59, 130, 246));
+        Calendar cal = Calendar.getInstance(); cal.add(Calendar.DAY_OF_MONTH, 1);
+        dateChooser.setDate(cal.getTime()); dateChooser.setDateFormatString("dd/MM/yyyy");
+        dateChooser.setPreferredSize(new Dimension(150,30));
+        JButton btnTim = createButton("🔍 Tìm chuyến", new Color(59,130,246));
         btnTim.addActionListener(e -> timChuyen());
+        pnlSearch.add(new JLabel("Ga đi:")); pnlSearch.add(cbGaDi);
+        pnlSearch.add(new JLabel("Ga đến:")); pnlSearch.add(cbGaDen);
+        pnlSearch.add(new JLabel("Ngày đi:")); pnlSearch.add(dateChooser); pnlSearch.add(btnTim);
 
-        pnlSearch.add(new JLabel("Ga đi:"));
-        pnlSearch.add(cbGaDi);
-        pnlSearch.add(new JLabel("Ga đến:"));
-        pnlSearch.add(cbGaDen);
-        pnlSearch.add(new JLabel("Ngày đi:"));
-        pnlSearch.add(dateChooser);
-        pnlSearch.add(btnTim);
-
-        // --- Khu vực hiển thị kết quả ---
-        JPanel pnlCenter = new JPanel(new BorderLayout());
-        pnlCenter.add(pnlSearch, BorderLayout.NORTH);
-
-        JSplitPane splitPaneMain = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        splitPaneMain.setDividerLocation(400);
-
-        // Cột trái: Danh sách chuyến
-        String[] cols = {"Mã Chuyến", "Tên Tàu", "Ga Đi", "Ga Đến", "Giờ Đi", "Giờ Đến"};
-        modelChuyen = new DefaultTableModel(cols, 0){
-            @Override public boolean isCellEditable(int row, int column) { return false; }
-        };
-        tblChuyen = new JTable(modelChuyen);
-        tblChuyen.setRowHeight(35);
+        JPanel pnlCenter = new JPanel(new BorderLayout()); pnlCenter.add(pnlSearch, BorderLayout.NORTH);
+        JSplitPane splitPaneMain = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT); splitPaneMain.setDividerLocation(400);
+        modelChuyen = new DefaultTableModel(new String[]{"Mã Chuyến","Tên Tàu","Ga Đi","Ga Đến","Giờ Đi","Giờ Đến"},0){
+            @Override public boolean isCellEditable(int r,int c){return false;}};
+        tblChuyen = new JTable(modelChuyen); tblChuyen.setRowHeight(35);
         tblChuyen.getSelectionModel().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting() && tblChuyen.getSelectedRow() != -1) {
+            if(!e.getValueIsAdjusting() && tblChuyen.getSelectedRow()!=-1){
                 currentChuyen = listChuyenTemp.get(tblChuyen.getSelectedRow());
-                if (controller != null) controller.loadToaByChuyen(currentChuyen);
+                if(controller!=null) controller.loadToaByChuyen(currentChuyen);
             }
         });
         JScrollPane scrollChuyen = new JScrollPane(tblChuyen);
         scrollChuyen.setBorder(BorderFactory.createTitledBorder("Danh sách chuyến"));
         splitPaneMain.setLeftComponent(scrollChuyen);
 
-        // Cột phải: Toa & Ghế
-        JSplitPane splitRight = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        splitRight.setDividerLocation(200);
-
-        // Panel Toa
-        pnlToa = new JPanel();
-        pnlToa.setLayout(new BoxLayout(pnlToa, BoxLayout.Y_AXIS));
-        pnlToa.setBackground(Color.WHITE);
-        JScrollPane scrollToa = new JScrollPane(pnlToa);
-        scrollToa.setBorder(BorderFactory.createTitledBorder("Danh sách Toa"));
+        JSplitPane splitRight = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT); splitRight.setDividerLocation(200);
+        pnlToa = new JPanel(); pnlToa.setLayout(new BoxLayout(pnlToa, BoxLayout.Y_AXIS)); pnlToa.setBackground(Color.WHITE);
+        JScrollPane scrollToa = new JScrollPane(pnlToa); scrollToa.setBorder(BorderFactory.createTitledBorder("Danh sách Toa"));
         splitRight.setLeftComponent(scrollToa);
-
-        // Panel Ghế
-        pnlGhe = new JPanel(new GridLayout(0, 5, 10, 10));
-        pnlGhe.setBackground(Color.WHITE);
-        JScrollPane scrollGhe = new JScrollPane(pnlGhe);
-        scrollGhe.setBorder(BorderFactory.createTitledBorder("Sơ đồ ghế"));
+        
+        // 🔥 SỬA ĐỔI: Chuyển sang GridLayout để sơ đồ nút ghế tự động xuống dòng ngay hàng thẳng lối đẹp mắt
+        pnlGhe = new JPanel(new GridLayout(0, 5, 10, 10)); pnlGhe.setBackground(Color.WHITE);
+        JScrollPane scrollGhe = new JScrollPane(pnlGhe); scrollGhe.setBorder(BorderFactory.createTitledBorder("Sơ đồ ghế"));
         splitRight.setRightComponent(scrollGhe);
-
         splitPaneMain.setRightComponent(splitRight);
-        pnlCenter.add(splitPaneMain, BorderLayout.CENTER);
-        add(pnlCenter, BorderLayout.CENTER);
+        pnlCenter.add(splitPaneMain, BorderLayout.CENTER); add(pnlCenter, BorderLayout.CENTER);
 
-        // --- Footer: Giỏ hàng & Thanh toán ---
         JPanel pnlFooter = new JPanel(new BorderLayout());
-        pnlFooter.setBorder(BorderFactory.createTitledBorder("Giỏ hàng & Thanh toán"));
-        pnlFooter.setPreferredSize(new Dimension(0, 180));
-
-        txtCart = new JTextArea();
-        txtCart.setEditable(false);
-        txtCart.setFont(new Font("Monospaced", Font.PLAIN, 13));
-        JScrollPane scrollCart = new JScrollPane(txtCart);
-        pnlFooter.add(scrollCart, BorderLayout.CENTER);
-
-        JPanel pnlPay = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 10));
-        lblTotal = new JLabel("Tổng tiền: 0 VND");
-        lblTotal.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        lblTotal.setForeground(Color.RED);
-        
-        JButton btnPay = createButton("💳 Thanh toán", new Color(34, 197, 94));
+        pnlFooter.setBorder(BorderFactory.createTitledBorder("Giỏ hàng & Thanh toán")); pnlFooter.setPreferredSize(new Dimension(0,180));
+        txtCart = new JTextArea(); txtCart.setEditable(false); txtCart.setFont(new Font("Monospaced",Font.PLAIN,13));
+        pnlFooter.add(new JScrollPane(txtCart), BorderLayout.CENTER);
+        JPanel pnlPay = new JPanel(new FlowLayout(FlowLayout.RIGHT,20,10));
+        lblTotal = new JLabel("Tổng tiền: 0 VND"); lblTotal.setFont(new Font("Segoe UI",Font.BOLD,18)); lblTotal.setForeground(Color.RED);
+        JButton btnPay = createButton("💳 Thanh toán", new Color(34,197,94));
         btnPay.addActionListener(e -> thanhToanVoiThongTinHanhKhach());
-
-        pnlPay.add(lblTotal);
-        pnlPay.add(btnPay);
-        pnlFooter.add(pnlPay, BorderLayout.SOUTH);
-        add(pnlFooter, BorderLayout.SOUTH);
+        pnlPay.add(lblTotal); pnlPay.add(btnPay);
+        pnlFooter.add(pnlPay, BorderLayout.SOUTH); add(pnlFooter, BorderLayout.SOUTH);
     }
 
-    // ==================== LOAD DỮ LIỆU TỪ DATABASE ====================
-    
-    /**
-     * Load danh sách ga từ database vào ComboBox
-     */
     public void loadGaComboBox(List<GaTau> dsGa) {
-        listGaTemp = dsGa;
-        cbGaDi.removeAllItems();
-        cbGaDen.removeAllItems();
-        
-        for (GaTau ga : dsGa) {
-            String item = ga.getMaGa() + " - " + ga.getTenGa();
-            cbGaDi.addItem(item);
-            cbGaDen.addItem(item);
-        }
-        
-        // Mặc định: Ga đầu là Hà Nội, Ga cuối là Sài Gòn
-        if (dsGa.size() > 0) {
-            cbGaDi.setSelectedIndex(0); // Ga đầu tiên (Hà Nội - GA009)
-            cbGaDen.setSelectedIndex(dsGa.size() - 1); // Ga cuối (Sài Gòn - GA047)
-        }
+        cbGaDi.removeAllItems(); cbGaDen.removeAllItems();
+        for(GaTau ga : dsGa){ String item = ga.getMaGa()+" - "+ga.getTenGa(); cbGaDi.addItem(item); cbGaDen.addItem(item); }
+        if(!dsGa.isEmpty()){ cbGaDi.setSelectedIndex(0); cbGaDen.setSelectedIndex(dsGa.size()-1); }
     }
 
-    // ==================== CHỨC NĂNG TÌM KIẾM ====================
-    
-    /**
-     * Tìm kiếm chuyến tàu theo ga đi, ga đến và ngày đi
-     */
     private void timChuyen() {
-        if (controller == null) {
-            JOptionPane.showMessageDialog(this, "Controller chưa được khởi tạo!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        
-        String selectedDi = (String) cbGaDi.getSelectedItem();
-        String selectedDen = (String) cbGaDen.getSelectedItem();
-        
-        if (selectedDi == null || selectedDen == null) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn ga đi và ga đến!", "Thông báo", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        // Lấy mã ga từ chuỗi "GA009 - Ga Hà Nội"
-        String maGaDi = selectedDi.split(" - ")[0].trim();
-        String maGaDen = selectedDen.split(" - ")[0].trim();
-        
-        // Lấy ngày đi từ JDateChooser
-        java.time.LocalDate ngayDi = null;
-        if (dateChooser.getDate() != null) {
-            ngayDi = dateChooser.getDate().toInstant()
-                .atZone(ZoneId.systemDefault()).toLocalDate();
-        } else {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn ngày đi!", "Thông báo", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        // Gọi controller tìm kiếm
+        if(controller==null) return;
+        if(cbGaDi.getSelectedItem() == null || cbGaDen.getSelectedItem() == null) return;
+        String maGaDi = ((String)cbGaDi.getSelectedItem()).split(" - ")[0].trim();
+        String maGaDen = ((String)cbGaDen.getSelectedItem()).split(" - ")[0].trim();
+        java.time.LocalDate ngayDi = dateChooser.getDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         controller.timKiemChuyen(maGaDi, maGaDen, ngayDi);
     }
 
-    // ==================== HIỂN THỊ DỮ LIỆU ====================
-    
-    /**
-     * Hiển thị danh sách chuyến tàu tìm được
-     */
     public void hienThiDanhSachChuyen(List<ChuyenTau> ds) {
-        SwingUtilities.invokeLater(() -> {
-            listChuyenTemp = ds;
-            modelChuyen.setRowCount(0);
-            
-            if (ds.isEmpty()) {
-                JOptionPane.showMessageDialog(this, 
-                    "Không tìm thấy chuyến tàu nào phù hợp!", 
-                    "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-            }
-            
-            for (ChuyenTau c : ds) {
-                modelChuyen.addRow(new Object[]{
-                    c.getMaChuyen(), 
-                    c.getTenTau(),
-                    c.getTenGaDi(),
-                    c.getTenGaDen(),
-                    c.getThoiGianDi().toString().replace("T", " "), 
-                    c.getThoiGianDen().toString().replace("T", " ")
-                });
-            }
-            
-            // Clear panel toa và ghế
-            pnlToa.removeAll(); 
-            pnlGhe.removeAll();
-            pnlToa.revalidate(); 
-            pnlToa.repaint();
-            pnlGhe.revalidate(); 
-            pnlGhe.repaint();
-            resetGioHang();
+        SwingUtilities.invokeLater(()->{
+            listChuyenTemp = ds; modelChuyen.setRowCount(0);
+            for(ChuyenTau c : ds) modelChuyen.addRow(new Object[]{c.getMaChuyen(),c.getTenTau(),c.getTenGaDi(),c.getTenGaDen(),c.getThoiGianDi().toString().replace("T"," "),c.getThoiGianDen().toString().replace("T"," ")});
+            pnlToa.removeAll(); pnlGhe.removeAll(); pnlToa.revalidate(); pnlToa.repaint(); pnlGhe.revalidate(); pnlGhe.repaint(); resetGioHang();
         });
     }
 
-    /**
-     * Hiển thị danh sách toa của chuyến đã chọn
-     */
     public void hienThiDanhSachToa(List<ToaTau> ds) {
-        SwingUtilities.invokeLater(() -> {
+        SwingUtilities.invokeLater(()->{
             pnlToa.removeAll();
-            
-            for (ToaTau t : ds) {
-                JButton btn = new JButton(
-                    String.format("<html><center><b>%s</b><br><small>%s - %d chỗ</small></center></html>", 
-                        t.getTenToa(), t.getLoaiToa(), t.getSucChua())
-                );
-                btn.setMaximumSize(new Dimension(180, 55));
-                btn.setBackground(new Color(240, 245, 255));
-                btn.setForeground(new Color(30, 64, 175));
-                btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
-                btn.setFocusPainted(false);
-                btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                
-                btn.addActionListener(e -> {
-                    currentMaToa = t.getMaToa();
-                    if (controller != null && currentChuyen != null) {
-                        controller.loadGheByToa(currentMaToa, currentChuyen.getMaChuyen());
-                    }
-                });
-                
-                pnlToa.add(Box.createRigidArea(new Dimension(0, 5)));
-                pnlToa.add(btn);
+            for(ToaTau t : ds){
+                JButton btn = new JButton(String.format("<html><center><b>%s</b><br><small>%s - %d chỗ</small></center></html>", t.getTenToa(),t.getLoaiToa(),t.getSucChua()));
+                btn.setMaximumSize(new Dimension(180,55)); btn.setBackground(new Color(240,245,255)); btn.setForeground(new Color(30,64,175));
+                btn.addActionListener(e -> { currentMaToa = t.getMaToa(); controller.loadGheByToa(currentMaToa, currentChuyen.getMaChuyen()); });
+                pnlToa.add(Box.createRigidArea(new Dimension(0,5))); pnlToa.add(btn);
             }
-            
-            pnlToa.add(Box.createVerticalGlue());
-            pnlToa.revalidate();
-            pnlToa.repaint();
-            
-            // Clear panel ghế
-            pnlGhe.removeAll(); 
-            pnlGhe.revalidate(); 
-            pnlGhe.repaint();
+            pnlToa.revalidate(); pnlToa.repaint(); pnlGhe.removeAll(); pnlGhe.revalidate(); pnlGhe.repaint();
         });
     }
 
-    /**
-     * Hiển thị sơ đồ ghế của toa đã chọn
-     */
     public void hienThiSoDoGhe(List<VeTau> dsVe, String maChuyen, String maToa) {
-        SwingUtilities.invokeLater(() -> {
+        SwingUtilities.invokeLater(()->{
             pnlGhe.removeAll();
-            
-            for (VeTau v : dsVe) {
-                String loaiGheHienThi = v.getLoaiGhe() != null ? v.getLoaiGhe() : "Ghế ngồi";
-                String giaHienThi = String.format("%,.0fđ", v.getGiaGoc());
-                
-                JButton btnGhe = new JButton(
-                    String.format("<html><center><b>%d</b><br><small>%s<br>%s</small></center></html>", 
-                        v.getSoGhe(), loaiGheHienThi, giaHienThi)
-                );
-                btnGhe.setPreferredSize(new Dimension(95, 75));
-                btnGhe.setFont(new Font("Segoe UI", Font.BOLD, 11));
-                btnGhe.setFocusPainted(false);
-                btnGhe.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                
-                // Kiểm tra ghế có trong giỏ hàng không
-                boolean isInCart = gioHang.stream()
-                    .anyMatch(ve -> ve.getMaGhe().equals(v.getMaGhe()));
-
-                // Set màu sắc theo trạng thái
-                if (v.getTrangThai() != null && v.getTrangThai().equalsIgnoreCase("Đã bán")) {
-                    btnGhe.setBackground(new Color(239, 68, 68)); // Đỏ
-                    btnGhe.setForeground(Color.WHITE);
-                    btnGhe.setEnabled(false);
-                    btnGhe.setToolTipText("Đã bán");
-                } else if (isInCart) {
-                    btnGhe.setBackground(new Color(249, 115, 22)); // Cam
-                    btnGhe.setForeground(Color.WHITE);
-                    btnGhe.setToolTipText("Đã chọn - Click để bỏ chọn");
-                } else {
-                    btnGhe.setBackground(new Color(34, 197, 94)); // Xanh lá
-                    btnGhe.setForeground(Color.WHITE);
-                    btnGhe.setToolTipText("Còn trống - Click để chọn");
-                }
-
-                final VeTau veTau = v;
+            for(VeTau v : dsVe){
+                JButton btnGhe = new JButton(String.format("<html><center><b>%d</b><br><small>%s<br>%,.0fđ</small></center></html>", v.getSoGhe(), v.getLoaiGhe(), v.getGiaGoc()));
+                btnGhe.setPreferredSize(new Dimension(95,75)); btnGhe.setFont(new Font("Segoe UI",Font.BOLD,11));
+                boolean inCart = gioHang.stream().anyMatch(ve->ve.getMaGhe().equals(v.getMaGhe()));
+                if("Đã bán".equals(v.getTrangThai())){ btnGhe.setBackground(new Color(239,68,68)); btnGhe.setEnabled(false); }
+                else if(inCart) btnGhe.setBackground(new Color(249,115,22));
+                else btnGhe.setBackground(new Color(34,197,94));
+                btnGhe.setForeground(Color.WHITE);
+                final VeTau vt = v;
                 btnGhe.addActionListener(e -> {
-                    // Kiểm tra trạng thái hiện tại của ghế
-                    boolean isSelected = gioHang.stream()
-                        .anyMatch(ve -> ve.getMaGhe().equals(veTau.getMaGhe()));
-                    
-                    if (isSelected) {
-                        // Bỏ chọn ghế
-                        capNhatGioHang(veTau, false);
-                        // Cập nhật màu nút
-                        SwingUtilities.invokeLater(() -> {
-                            btnGhe.setBackground(new Color(34, 197, 94)); // Xanh lá
-                            btnGhe.setToolTipText("Còn trống - Click để chọn");
-                        });
-                    } else {
-                        // Thêm vào giỏ hàng
-                        capNhatGioHang(veTau, true);
-                        // Cập nhật màu nút
-                        SwingUtilities.invokeLater(() -> {
-                            btnGhe.setBackground(new Color(249, 115, 22)); // Cam
-                            btnGhe.setToolTipText("Đã chọn - Click để bỏ chọn");
-                        });
-                    }
+                    boolean selected = gioHang.stream().anyMatch(ve->ve.getMaGhe().equals(vt.getMaGhe()));
+                    capNhatGioHang(vt, !selected);
+                    // 🔥 SỬA ĐỔI QUAN TRỌNG: Gọi reloadGhe() thông qua Controller để nạp lại danh sách mới từ DB, tránh lỗi tràn tầng lặp vô hạn
+                    reloadGhe(); 
                 });
-                
                 pnlGhe.add(btnGhe);
             }
-            
-            pnlGhe.revalidate();
-            pnlGhe.repaint();
+            pnlGhe.revalidate(); pnlGhe.repaint();
         });
     }
 
-    /**
-     * Cập nhật giỏ hàng khi chọn/bỏ chọn ghế
-     */
-    public void capNhatGioHang(VeTau ve, boolean isAdd) {
-        if (isAdd) {
-            gioHang.add(ve);
-        } else {
-            gioHang.removeIf(v -> v.getMaGhe().equals(ve.getMaGhe()));
-        }
-        
-        // Cập nhật hiển thị giỏ hàng
-        StringBuilder sb = new StringBuilder();
-        double total = 0;
-        sb.append(String.format("%-8s %-12s %-15s %-15s\n", "Số Ghế", "Loại Ghế", "Giá (VND)", "Loại Vé"));
+    public void capNhatGioHang(VeTau ve, boolean add){
+        if(add) gioHang.add(ve); else gioHang.removeIf(v->v.getMaGhe().equals(ve.getMaGhe()));
+        StringBuilder sb = new StringBuilder(); double total = 0;
+        sb.append(String.format("%-8s %-12s %-15s %-15s\n","Số Ghế","Loại Ghế","Giá (VND)","Loại Vé"));
         sb.append("─".repeat(55)).append("\n");
-        
-        for (int i = 0; i < gioHang.size(); i++) {
-            VeTau v = gioHang.get(i);
-            sb.append(String.format("%-8d %-12s %,-15.0f %-15s\n", 
-                v.getSoGhe(), 
-                v.getLoaiGhe() != null ? v.getLoaiGhe() : "",
-                v.getGiaGoc(),
-                ""));
-            total += v.getGiaGoc();
-        }
-        
-        sb.append("─".repeat(55)).append("\n");
-        sb.append(String.format("Tổng cộng: %d vé, Thành tiền: %,.0f VND\n", gioHang.size(), total));
-        
-        txtCart.setText(sb.toString());
-        lblTotal.setText(String.format("Tổng tiền: %,.0f VND", total));
+        for(VeTau v : gioHang){ sb.append(String.format("%-8d %-12s %,-15.0f %-15s\n", v.getSoGhe(), v.getLoaiGhe(), v.getGiaGoc(),"")); total+=v.getGiaGoc(); }
+        sb.append("─".repeat(55)).append("\n").append(String.format("Tổng: %d vé, %,.0f VND\n", gioHang.size(), total));
+        txtCart.setText(sb.toString()); lblTotal.setText(String.format("Tổng tiền: %,.0f VND", total));
     }
 
-    /**
-     * Reset giỏ hàng
-     */
-    public void resetGioHang() {
-        gioHang.clear();
-        txtCart.setText("");
-        lblTotal.setText("Tổng tiền: 0 VND");
-    }
+    public void resetGioHang(){ gioHang.clear(); txtCart.setText(""); lblTotal.setText("Tổng tiền: 0 VND"); }
+    public void reloadGhe(){ if(currentChuyen!=null && currentMaToa!=null) controller.loadGheByToa(currentMaToa, currentChuyen.getMaChuyen()); }
 
-    /**
-     * Reload sơ đồ ghế
-     */
-    public void reloadGhe() {
-        if (controller != null && currentChuyen != null && currentMaToa != null) {
-            controller.loadGheByToa(currentMaToa, currentChuyen.getMaChuyen());
-        }
-    }
+    private void thanhToanVoiThongTinHanhKhach(){
+        if(gioHang.isEmpty()) return;
+        List<KhuyenMai> dsKM = controller.getActiveKhuyenMai();
+        List<Thue> dsThue = controller.getActiveThue();
 
-    // ==================== CHỨC NĂNG THANH TOÁN ====================
-    
-    /**
-     * Form thanh toán với thông tin hành khách
-     */
-    private void thanhToanVoiThongTinHanhKhach() {
-        if (gioHang.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn ít nhất một ghế!", "Thông báo", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        if (currentChuyen == null) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn chuyến tàu!", "Thông báo", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        // Tạo dialog thanh toán
-        JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this), 
-            "Thông tin đặt vé & Thanh toán", Dialog.ModalityType.APPLICATION_MODAL);
-        dialog.setSize(550, 550);
+        JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this),"Đặt vé & Thanh toán",Dialog.ModalityType.APPLICATION_MODAL);
         dialog.setLayout(new BorderLayout());
-        dialog.setLocationRelativeTo(this);
+
+        JPanel main = new JPanel(new GridBagLayout()); main.setBorder(BorderFactory.createEmptyBorder(15,15,15,15)); main.setBackground(Color.WHITE);
+        GridBagConstraints gbc = new GridBagConstraints(); gbc.fill=GridBagConstraints.HORIZONTAL; gbc.insets=new Insets(5,5,5,5); gbc.gridx=0; gbc.weightx=1.0;
+
+        // Khách hàng
+        JTextField txtCCCD=new JTextField(15), txtTen=new JTextField(15), txtSDT=new JTextField(15), txtEmail=new JTextField(15);
+        JLabel lblMaKH = new JLabel("(Tự động tạo mới)"); lblMaKH.setForeground(Color.GRAY);
+        JButton btnTimKH = new JButton("🔍 Tìm KH"); btnTimKH.setBackground(new Color(59,130,246)); btnTimKH.setForeground(Color.WHITE);
+        JPanel pnlKH = new JPanel(new GridBagLayout()); pnlKH.setBorder(createTitleBorder("Thông tin khách hàng")); pnlKH.setBackground(new Color(250,250,255));
+        GridBagConstraints gbcKH = new GridBagConstraints(); gbcKH.insets=new Insets(3,3,3,3); gbcKH.fill=GridBagConstraints.HORIZONTAL;
         
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        gbcKH.gridx=0; gbcKH.gridy=0; pnlKH.add(new JLabel("CCCD (*):"),gbcKH); 
+        gbcKH.gridx=1; 
+        JPanel pnlCCCD=new JPanel(new BorderLayout(5,0)); pnlCCCD.setOpaque(false); 
+        pnlCCCD.add(txtCCCD,BorderLayout.CENTER); pnlCCCD.add(btnTimKH,BorderLayout.EAST); 
+        pnlKH.add(pnlCCCD,gbcKH);
         
-        // === Panel thông tin khách hàng ===
-        JPanel pnlKhachHang = new JPanel(new GridLayout(0, 2, 10, 10));
-        pnlKhachHang.setBorder(BorderFactory.createTitledBorder("Thông tin khách hàng"));
-        
-        JTextField txtCCCD = new JTextField();
-        JTextField txtTenKH = new JTextField();
-        JTextField txtSDT = new JTextField();
-        JTextField txtEmail = new JTextField();
-        JLabel lblMaKH = new JLabel("(Tự động tạo mới)");
-        
-        JButton btnTimKH = new JButton("🔍 Tìm KH");
-        btnTimKH.setBackground(new Color(59, 130, 246));
-        btnTimKH.setForeground(Color.WHITE);
-        
-        pnlKhachHang.add(new JLabel("CCCD (*):"));
-        JPanel pnlCCCD = new JPanel(new BorderLayout(5, 0));
-        pnlCCCD.add(txtCCCD, BorderLayout.CENTER);
-        pnlCCCD.add(btnTimKH, BorderLayout.EAST);
-        pnlKhachHang.add(pnlCCCD);
-        pnlKhachHang.add(new JLabel("Họ tên (*):"));
-        pnlKhachHang.add(txtTenKH);
-        pnlKhachHang.add(new JLabel("Số điện thoại:"));
-        pnlKhachHang.add(txtSDT);
-        pnlKhachHang.add(new JLabel("Email:"));
-        pnlKhachHang.add(txtEmail);
-        pnlKhachHang.add(new JLabel("Mã KH:"));
-        pnlKhachHang.add(lblMaKH);
-        
-        // === Panel thông tin hành khách cho từng vé ===
-        JPanel pnlHanhKhach = new JPanel();
-        pnlHanhKhach.setLayout(new BoxLayout(pnlHanhKhach, BoxLayout.Y_AXIS));
-        pnlHanhKhach.setBorder(BorderFactory.createTitledBorder("Thông tin hành khách cho từng vé"));
-        
-        List<JTextField> listTenHK = new ArrayList<>();
-        List<JTextField> listCCCDHK = new ArrayList<>();
-        List<JComboBox<String>> listLoaiVe = new ArrayList<>();
-        
-        String[] loaiVeOptions = {"Người lớn", "Trẻ em", "Sinh viên", "Người cao tuổi"};
-        
-        for (int i = 0; i < gioHang.size(); i++) {
-            VeTau ve = gioHang.get(i);
-            JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-            row.setBorder(BorderFactory.createEtchedBorder());
-            
-            row.add(new JLabel("Ghế " + ve.getSoGhe() + " (" + ve.getLoaiGhe() + "):"));
-            
-            JTextField txtTen = new JTextField(12);
-            listTenHK.add(txtTen);
-            row.add(new JLabel("Tên:"));
-            row.add(txtTen);
-            
-            JTextField txtCCCDHK = new JTextField(10);
-            listCCCDHK.add(txtCCCDHK);
-            row.add(new JLabel("CCCD:"));
-            row.add(txtCCCDHK);
-            
-            JComboBox<String> cbLoai = new JComboBox<>(loaiVeOptions);
-            listLoaiVe.add(cbLoai);
-            row.add(new JLabel("Loại vé:"));
-            row.add(cbLoai);
-            
+        gbcKH.gridx=0;gbcKH.gridy=1; pnlKH.add(new JLabel("Họ tên (*):"),gbcKH); gbcKH.gridx=1; pnlKH.add(txtTen,gbcKH);
+        gbcKH.gridx=0;gbcKH.gridy=2; pnlKH.add(new JLabel("SĐT:"),gbcKH); gbcKH.gridx=1; pnlKH.add(txtSDT,gbcKH);
+        gbcKH.gridx=0;gbcKH.gridy=3; pnlKH.add(new JLabel("Email:"),gbcKH); gbcKH.gridx=1; pnlKH.add(txtEmail,gbcKH);
+        gbcKH.gridx=0;gbcKH.gridy=4; pnlKH.add(new JLabel("Mã KH:"),gbcKH); gbcKH.gridx=1; pnlKH.add(lblMaKH,gbcKH);
+        gbc.gridy=0; main.add(pnlKH,gbc);
+
+        // Hành khách vé
+        JPanel pnlHanhKhach = new JPanel(); pnlHanhKhach.setLayout(new BoxLayout(pnlHanhKhach,BoxLayout.Y_AXIS));
+        pnlHanhKhach.setBorder(createTitleBorder("Thông tin hành khách từng vé")); pnlHanhKhach.setBackground(new Color(250,250,255));
+        List<JTextField> listTenHK=new ArrayList<>(), listCCCDHK=new ArrayList<>();
+        List<JComboBox<String>> listLoaiVe=new ArrayList<>();
+        String[] loaiArr = {"Người lớn","Trẻ em","Sinh viên","Người cao tuổi"};
+        for(VeTau ve : gioHang){
+            JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT,10,5)); row.setBackground(new Color(245,248,255));
+            row.add(new JLabel("Ghế "+ve.getSoGhe()+" ("+ve.getLoaiGhe()+"):"));
+            JTextField ten=new JTextField(12); listTenHK.add(ten); row.add(new JLabel("Tên:")); row.add(ten);
+            JTextField cccd=new JTextField(10); listCCCDHK.add(cccd); row.add(new JLabel("CCCD:")); row.add(cccd);
+            JComboBox<String> loai = new JComboBox<>(loaiArr); listLoaiVe.add(loai); row.add(new JLabel("Loại:")); row.add(loai);
             pnlHanhKhach.add(row);
         }
-        
-        // === Panel phương thức thanh toán ===
-        JPanel pnlThanhToan = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        pnlThanhToan.setBorder(BorderFactory.createTitledBorder("Phương thức thanh toán"));
-        String[] ptOptions = {"Tiền mặt", "Chuyển khoản", "Thẻ"};
-        JComboBox<String> cbPT = new JComboBox<>(ptOptions);
-        pnlThanhToan.add(new JLabel("Phương thức:"));
-        pnlThanhToan.add(cbPT);
-        
-        // === Tổng tiền ===
-        JPanel pnlTongTien = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JLabel lblTongTienDialog = new JLabel(String.format("Tổng thanh toán: %,.0f VND", 
-            gioHang.stream().mapToDouble(VeTau::getGiaGoc).sum()));
-        lblTongTienDialog.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        lblTongTienDialog.setForeground(Color.RED);
-        pnlTongTien.add(lblTongTienDialog);
-        
-        // Thêm vào mainPanel
-        mainPanel.add(pnlKhachHang);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        mainPanel.add(pnlHanhKhach);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        mainPanel.add(pnlThanhToan);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        mainPanel.add(pnlTongTien);
-        
-        JScrollPane scrollPane = new JScrollPane(mainPanel);
-        dialog.add(scrollPane, BorderLayout.CENTER);
-        
-        // === Buttons ===
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton btnXacNhan = new JButton("✅ Xác nhận đặt vé");
-        btnXacNhan.setBackground(new Color(34, 197, 94));
-        btnXacNhan.setForeground(Color.WHITE);
-        btnXacNhan.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        
-        JButton btnHuy = new JButton("❌ Hủy");
-        btnHuy.setBackground(Color.GRAY);
-        btnHuy.setForeground(Color.WHITE);
-        
-        btnPanel.add(btnHuy);
-        btnPanel.add(btnXacNhan);
-        dialog.add(btnPanel, BorderLayout.SOUTH);
-        
-        // === Xử lý sự kiện ===
-        
-        // Tìm khách hàng theo CCCD
-        btnTimKH.addActionListener(e -> {
+        gbc.gridy=1; main.add(pnlHanhKhach,gbc);
+
+        // KM & Thuế
+        JComboBox<String> cbKM = new JComboBox<>(); cbKM.addItem("Không áp dụng");
+        dsKM.forEach(km->cbKM.addItem(km.getMaKM()+" - "+km.getTenKM()+" ("+(km.getLoaiKM().equals("PERCENT")?km.getGiaTri()+"%":String.format("%,.0fđ",km.getGiaTri()))+")"));
+        JComboBox<String> cbThue = new JComboBox<>(); cbThue.addItem("Không áp dụng");
+        dsThue.forEach(t->cbThue.addItem(t.getMaThue()+" - "+t.getTenThue()+" ("+String.format("%.1f%%",t.getPhanTram())+")"));
+        JPanel pnlKMT = new JPanel(new GridBagLayout()); pnlKMT.setBorder(createTitleBorder("Khuyến mãi & Thuế")); pnlKMT.setBackground(new Color(250,250,255));
+        GridBagConstraints gbK = new GridBagConstraints(); gbK.insets=new Insets(5,5,5,5); gbK.fill=GridBagConstraints.HORIZONTAL;
+        gbK.gridy=0; pnlKMT.add(new JLabel("Khuyến mãi:"),gbK); gbK.gridx=1; pnlKMT.add(cbKM,gbK);
+        gbK.gridx=0;gbK.gridy=1; pnlKMT.add(new JLabel("Thuế/VAT:"),gbK); gbK.gridx=1; pnlKMT.add(cbThue,gbK);
+        gbc.gridy=2; main.add(pnlKMT,gbc);
+
+        // Tổng tiền
+        JLabel lblGoc=new JLabel(), lblGiam=new JLabel(), lblThue=new JLabel(), lblTong=new JLabel();
+        lblTong.setFont(new Font("Segoe UI",Font.BOLD,16)); lblTong.setForeground(new Color(200,30,30));
+        JPanel pnlTien = new JPanel(new GridLayout(4,1,5,5)); pnlTien.setOpaque(false);
+        pnlTien.add(lblGoc); pnlTien.add(lblGiam); pnlTien.add(lblThue); pnlTien.add(lblTong);
+        gbc.gridy=3; main.add(pnlTien,gbc);
+
+        Runnable capNhat = ()->{
+            double tongGoc = gioHang.stream().mapToDouble(VeTau::getGiaGoc).sum();
+            double giam=0, thue=0;
+            int idxKM = cbKM.getSelectedIndex(); 
+            if(idxKM>0){ KhuyenMai km = dsKM.get(idxKM-1); giam = km.getLoaiKM().equals("FIXED")? tongGoc*km.getGiaTri()/100: tongGoc*km.getGiaTri()/100; }
+            double sauGiam = tongGoc - giam;
+            int idxT = cbThue.getSelectedIndex();
+            if(idxT>0){ Thue t = dsThue.get(idxT-1); thue = sauGiam * t.getPhanTram()/100; }
+            double tongCuoi = sauGiam + thue;
+            lblGoc.setText(String.format("Tổng giá gốc: %,.0f VND", tongGoc));
+            lblGiam.setText(String.format("Giảm giá: -%,.0f VND", giam));
+            lblThue.setText(String.format("Thuế: +%,.0f VND", thue));
+            lblTong.setText(String.format("Thành tiền: %,.0f VND", tongCuoi));
+        };
+        cbKM.addActionListener(e->capNhat.run()); cbThue.addActionListener(e->capNhat.run()); capNhat.run();
+
+        // Phương thức TT
+        JPanel pnlPT = new JPanel(new FlowLayout(FlowLayout.LEFT)); pnlPT.setBorder(createTitleBorder("Phương thức thanh toán"));
+        String[] ptOpt = {"Tiền mặt","Chuyển khoản","Thẻ"}; JComboBox<String> cbPT = new JComboBox<>(ptOpt);
+        pnlPT.add(new JLabel("Phương thức:")); pnlPT.add(cbPT);
+        gbc.gridy=4; main.add(pnlPT,gbc);
+
+        JScrollPane scroll = new JScrollPane(main); scroll.setBorder(null); dialog.add(scroll, BorderLayout.CENTER);
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT,10,10)); btnPanel.setBackground(new Color(240,240,245));
+        JButton btnOK = new JButton("✅ Xác nhận đặt vé"); btnOK.setBackground(new Color(34,197,94)); btnOK.setForeground(Color.WHITE);
+        JButton btnHuy = new JButton("❌ Hủy"); btnHuy.setBackground(Color.GRAY); btnHuy.setForeground(Color.WHITE);
+        btnPanel.add(btnHuy); btnPanel.add(btnOK); dialog.add(btnPanel, BorderLayout.SOUTH);
+        dialog.setSize(680, Math.min(500+gioHang.size()*60, 700)); dialog.setLocationRelativeTo(this); dialog.setResizable(false);
+
+        btnTimKH.addActionListener(e->{
             String cccd = txtCCCD.getText().trim();
-            if (cccd.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog, "Vui lòng nhập CCCD để tìm!", "Thông báo", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            
-            if (controller != null) {
-                KhachHang kh = controller.timKhachHangTheoCCCD(cccd);
-                if (kh != null) {
-                    txtTenKH.setText(kh.getTenKH());
-                    txtSDT.setText(kh.getSoDienThoai() != null ? kh.getSoDienThoai() : "");
-                    txtEmail.setText(kh.getEmail() != null ? kh.getEmail() : "");
-                    lblMaKH.setText(kh.getMaKH());
-                    lblMaKH.setForeground(new Color(34, 197, 94));
-                    JOptionPane.showMessageDialog(dialog, "Đã tìm thấy khách hàng: " + kh.getTenKH());
-                } else {
-                    txtTenKH.setText("");
-                    txtSDT.setText("");
-                    txtEmail.setText("");
-                    lblMaKH.setText("(Khách hàng mới)");
-                    lblMaKH.setForeground(Color.ORANGE);
-                    JOptionPane.showMessageDialog(dialog, "Không tìm thấy khách hàng. Sẽ tạo mới khi đặt vé.");
-                }
-            }
+            KhachHang kh = controller.timKhachHangTheoCCCD(cccd);
+            if(kh!=null){ txtTen.setText(kh.getTenKH()); txtSDT.setText(kh.getSoDienThoai()); txtEmail.setText(kh.getEmail()); lblMaKH.setText(kh.getMaKH()); lblMaKH.setForeground(new Color(34,197,94)); }
+            else { txtTen.setText(""); txtSDT.setText(""); txtEmail.setText(""); lblMaKH.setText("(Khách hàng mới)"); lblMaKH.setForeground(Color.ORANGE); }
         });
         
-        // Xác nhận đặt vé
-        btnXacNhan.addActionListener(e -> {
-            String cccd = txtCCCD.getText().trim();
-            String tenKH = txtTenKH.getText().trim();
-            String sdt = txtSDT.getText().trim();
-            String email = txtEmail.getText().trim();
+        btnOK.addActionListener(e->{
+            String cccd=txtCCCD.getText().trim(), ten=txtTen.getText().trim();
+            String maKH=lblMaKH.getText();
+            if(maKH.contains("mới")){ maKH=controller.taoKhachHangMoi(ten,cccd,txtSDT.getText().trim(),txtEmail.getText().trim()); }
             
-            // Validate
-            if (cccd.isEmpty() || tenKH.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog, "Vui lòng nhập CCCD và Họ tên khách hàng!", 
-                    "Thiếu thông tin", JOptionPane.WARNING_MESSAGE);
-                return;
+            for(int i=0;i<gioHang.size();i++){ 
+                VeTau v=gioHang.get(i); 
+                v.setTenHanhKhach(listTenHK.get(i).getText().trim()); 
+                v.setSoCCCD(listCCCDHK.get(i).getText().trim()); 
+                v.setLoaiVe((String)listLoaiVe.get(i).getSelectedItem()); 
             }
             
-            // Kiểm tra thông tin hành khách cho từng vé
-            for (int i = 0; i < gioHang.size(); i++) {
-                String tenHK = listTenHK.get(i).getText().trim();
-                String cccdHK = listCCCDHK.get(i).getText().trim();
-                
-                if (tenHK.isEmpty() || cccdHK.isEmpty()) {
-                    JOptionPane.showMessageDialog(dialog, 
-                        "Vui lòng nhập đầy đủ Tên và CCCD cho ghế " + gioHang.get(i).getSoGhe() + "!", 
-                        "Thiếu thông tin", JOptionPane.WARNING_MESSAGE);
-                    return;
-                }
-                
-                // Cập nhật thông tin hành khách vào vé
-                VeTau ve = gioHang.get(i);
-                ve.setTenHanhKhach(tenHK);
-                ve.setSoCCCD(cccdHK);
-                ve.setLoaiVe((String) listLoaiVe.get(i).getSelectedItem());
+            double giam=0,thue=0; String maKM=null, maThue=null;
+            int iKM=cbKM.getSelectedIndex(); 
+            if(iKM>0){ 
+                KhuyenMai km=dsKM.get(iKM-1); maKM=km.getMaKM(); 
+                double goc=gioHang.stream().mapToDouble(VeTau::getGiaGoc).sum(); 
+                giam=km.getLoaiKM().equals("FIXED")?km.getGiaTri():goc*km.getGiaTri()/100; 
+            }
+            int iT=cbThue.getSelectedIndex(); 
+            if(iT>0){ 
+                Thue t=dsThue.get(iT-1); maThue=t.getMaThue(); 
+                thue=(gioHang.stream().mapToDouble(VeTau::getGiaGoc).sum()-giam)*t.getPhanTram()/100; 
             }
             
-            // Xác định mã khách hàng
-            String maKH = lblMaKH.getText();
-            if (maKH.equals("(Tự động tạo mới)") || maKH.equals("(Khách hàng mới)")) {
-                if (controller != null) {
-                    maKH = controller.taoKhachHangMoi(tenKH, cccd, sdt, email);
-                    if (maKH == null) {
-                        JOptionPane.showMessageDialog(dialog, "Lỗi tạo khách hàng mới!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-                }
-            }
-            
-            // Lấy phương thức thanh toán
-            String pt = (String) cbPT.getSelectedItem();
-            
-            // Gọi controller thanh toán
-            if (controller != null) {
-                controller.thanhToan(gioHang, maKH, "1", pt); // Mã NV mặc định là "1"
-            }
-            
+            // 🔥 ĐỒNG BỘ: Đã map chuẩn 8 tham số khớp khít với hàm thanh toán bên BanVeController
+            controller.thanhToan(gioHang, maKH, "1", (String)cbPT.getSelectedItem(), maKM, maThue, giam, thue);
             dialog.dispose();
         });
-        
-        // Hủy
-        btnHuy.addActionListener(e -> dialog.dispose());
-        
+        btnHuy.addActionListener(e->dialog.dispose());
         dialog.setVisible(true);
     }
 
-    // ==================== UTILITY ====================
-    
-    private JButton createButton(String text, Color bg) {
-        JButton btn = new JButton(text);
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btn.setBackground(bg);
-        btn.setForeground(Color.WHITE);
-        btn.setFocusPainted(false);
-        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btn.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
-        return btn;
+    private JButton createButton(String text, Color bg){
+        JButton b = new JButton(text); b.setFont(new Font("Segoe UI",Font.BOLD,13)); b.setBackground(bg); b.setForeground(Color.WHITE);
+        b.setFocusPainted(false); b.setCursor(new Cursor(Cursor.HAND_CURSOR)); b.setBorder(BorderFactory.createEmptyBorder(8,15,8,15)); return b;
+    }
+    private TitledBorder createTitleBorder(String title){
+        return BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(200,200,200),1,true), title, TitledBorder.LEFT, TitledBorder.TOP, new Font("Segoe UI",Font.BOLD,13), new Color(30,64,175));
     }
 }

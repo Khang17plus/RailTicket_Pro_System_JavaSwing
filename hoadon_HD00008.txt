@@ -1,0 +1,11 @@
+========== HÓA ĐƠN BÁN VÉ TÀU ==========
+Mã HD: HD00008
+Khách hàng: KH002
+Ngày lập: 2026-05-28T00:46:13.232989100
+Chuyến tàu: CHUYEN_SE1_01
+----------------------------------------
+Số ghế     Loại ghế   Hành khách           CCCD            Giá            
+8          Ghế ngồi   Nguyễn Hoàng Khang   987987987       200000         
+----------------------------------------
+Tổng thanh toán: 200000.0 VND
+Cảm ơn quý khách đã sử dụng dịch vụ!

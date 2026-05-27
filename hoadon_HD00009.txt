@@ -1,0 +1,12 @@
+========== HÓA ĐƠN BÁN VÉ TÀU ==========
+Mã HD: HD00009
+Khách hàng: KH002
+Ngày lập: 2026-05-28T01:17:54.309008200
+Chuyến tàu: CHUYEN_SE2_01
+----------------------------------------
+Số ghế     Loại ghế   Hành khách           CCCD            Giá            
+1          Ghế ngồi   hihi                 98798435        200000         
+2          Ghế ngồi   huhu                 8789768976      200000         
+----------------------------------------
+Tổng thanh toán: 400000.0 VND
+Cảm ơn quý khách đã sử dụng dịch vụ!

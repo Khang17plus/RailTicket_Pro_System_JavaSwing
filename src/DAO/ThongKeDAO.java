@@ -11,9 +11,11 @@ import ConnectDB.ConnectDB;
 
 public class ThongKeDAO {
 
-    // 1. Thống kê số vé bán ra hôm nay
+    // ==================== DÀNH CHO TRANG CHỦ (DASHBOARD) ====================
+
+    // 1. Thống kê số vé bán ra hôm nay (Join qua CT_HoaDon)
     public int getSoVeBanHomNay() {
-        String sql = "SELECT COUNT(*) FROM Ve v JOIN HoaDon hd ON v.maHoaDon = hd.maHoaDon " +
+        String sql = "SELECT COUNT(ct.maVe) FROM CT_HoaDon ct JOIN HoaDon hd ON ct.maHoaDon = hd.maHoaDon " +
                      "WHERE CAST(hd.ngayLap AS DATE) = CAST(GETDATE() AS DATE)";
         try (Connection conn = ConnectDB.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -23,9 +25,9 @@ public class ThongKeDAO {
         return 0;
     }
 
-    // 2. Thống kê tổng doanh thu hôm nay
+    // 2. Thống kê tổng doanh thu hôm nay (Dùng cột tongThanhToan)
     public double getDoanhThuHomNay() {
-        String sql = "SELECT COALESCE(SUM(tongTien), 0) FROM HoaDon " +
+        String sql = "SELECT COALESCE(SUM(tongThanhToan), 0) FROM HoaDon " +
                      "WHERE CAST(ngayLap AS DATE) = CAST(GETDATE() AS DATE)";
         try (Connection conn = ConnectDB.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -57,15 +59,14 @@ public class ThongKeDAO {
         return 0;
     }
 
-    // 5. Lấy dữ liệu Doanh thu trong tuần hiện tại (Từ Thứ 2 đến Chủ Nhật) để vẽ biểu đồ Cột
+    // 5. Biểu đồ: Doanh thu tuần hiện tại
     public Map<String, Double> getDoanhThuTheoTuan() {
         Map<String, Double> map = new LinkedHashMap<>();
-        // Khởi tạo mặc định các thứ bằng 0
         map.put("T2", 0.0); map.put("T3", 0.0); map.put("T4", 0.0);
         map.put("T5", 0.0); map.put("T6", 0.0); map.put("T7", 0.0); map.put("CN", 0.0);
 
         String sql = "SET DATEFIRST 1; " + 
-                     "SELECT DATEPART(WEEKDAY, ngayLap) AS Thu, SUM(tongTien) AS DoanhThu " +
+                     "SELECT DATEPART(WEEKDAY, ngayLap) AS Thu, SUM(tongThanhToan) AS DoanhThu " +
                      "FROM HoaDon WHERE ngayLap >= DATEADD(wk, DATEDIFF(wk, 6, GETDATE()), 6) " +
                      "GROUP BY DATEPART(WEEKDAY, ngayLap)";
         try (Connection conn = ConnectDB.getInstance().getConnection();
@@ -73,30 +74,30 @@ public class ThongKeDAO {
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 int thu = rs.getInt("Thu");
-                double bieuDoDoanhThu = rs.getDouble("DoanhThu");
+                double doanhThu = rs.getDouble("DoanhThu");
                 switch (thu) {
-                    case 1: map.put("T2", bieuDoDoanhThu); break;
-                    case 2: map.put("T3", bieuDoDoanhThu); break;
-                    case 3: map.put("T4", bieuDoDoanhThu); break;
-                    case 4: map.put("T5", bieuDoDoanhThu); break;
-                    case 5: map.put("T6", bieuDoDoanhThu); break;
-                    case 6: map.put("T7", bieuDoDoanhThu); break;
-                    case 7: map.put("CN", bieuDoDoanhThu); break;
+                    case 1: map.put("T2", doanhThu); break;
+                    case 2: map.put("T3", doanhThu); break;
+                    case 3: map.put("T4", doanhThu); break;
+                    case 4: map.put("T5", doanhThu); break;
+                    case 5: map.put("T6", doanhThu); break;
+                    case 6: map.put("T7", doanhThu); break;
+                    case 7: map.put("CN", doanhThu); break;
                 }
             }
         } catch (Exception e) { e.printStackTrace(); }
         return map;
     }
 
-    // 6. Lấy số lượng Vé bán ra trong tuần hiện tại để vẽ biểu đồ Đường
+    // 6. Biểu đồ: Số vé tuần hiện tại
     public Map<String, Integer> getSoVeBanTheoTuan() {
         Map<String, Integer> map = new LinkedHashMap<>();
         map.put("T2", 0); map.put("T3", 0); map.put("T4", 0);
         map.put("T5", 0); map.put("T6", 0); map.put("T7", 0); map.put("CN", 0);
 
         String sql = "SET DATEFIRST 1; " +
-                     "SELECT DATEPART(WEEKDAY, hd.ngayLap) AS Thu, COUNT(v.maVe) AS SoVe " +
-                     "FROM Ve v JOIN HoaDon hd ON v.maHoaDon = hd.maHoaDon " +
+                     "SELECT DATEPART(WEEKDAY, hd.ngayLap) AS Thu, COUNT(ct.maVe) AS SoVe " +
+                     "FROM CT_HoaDon ct JOIN HoaDon hd ON ct.maHoaDon = hd.maHoaDon " +
                      "WHERE hd.ngayLap >= DATEADD(wk, DATEDIFF(wk, 6, GETDATE()), 6) " +
                      "GROUP BY DATEPART(WEEKDAY, hd.ngayLap)";
         try (Connection conn = ConnectDB.getInstance().getConnection();
@@ -119,56 +120,40 @@ public class ThongKeDAO {
         return map;
     }
 
-    /**
-     * 🔥 HÀM MỚI BỔ SUNG: Lấy dữ liệu thống kê doanh thu và số vé theo từng tháng của năm hiện tại
-     * Trả về danh sách mảng Object phối hợp: [Tên Tháng, Số Vé, Số Hóa Đơn, Doanh Thu]
-     */
+    // ==================== DÀNH CHO TRANG THỐNG KÊ (ĐỘNG) ====================
+
+    // 7. Thống kê theo Tháng
     public List<Object[]> getDoanhThuTheoThang() {
         List<Object[]> list = new ArrayList<>();
-        String sql = "SELECT " +
-                     "    MONTH(hd.ngayLap) AS Thang, " +
-                     "    COUNT(v.maVe) AS SoVe, " +
-                     "    COUNT(DISTINCT hd.maHoaDon) AS SoHoaDon, " +
-                     "    SUM(hd.tongTien) AS DoanhThu " +
-                     "FROM HoaDon hd " +
-                     "LEFT JOIN Ve v ON hd.maHoaDon = v.maHoaDon " +
+        String sql = "SELECT MONTH(hd.ngayLap) AS Thang, " +
+                     "COUNT(ct.maVe) AS SoVe, " +
+                     "COUNT(DISTINCT hd.maHoaDon) AS SoHoaDon, " +
+                     "SUM(hd.tongThanhToan) AS DoanhThu " +
+                     "FROM HoaDon hd LEFT JOIN CT_HoaDon ct ON hd.maHoaDon = ct.maHoaDon " +
                      "WHERE YEAR(hd.ngayLap) = YEAR(GETDATE()) " +
-                     "GROUP BY MONTH(hd.ngayLap) " +
-                     "ORDER BY Thang ASC";
-
+                     "GROUP BY MONTH(hd.ngayLap) ORDER BY Thang ASC";
         try (Connection conn = ConnectDB.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
-            
             while (rs.next()) {
-                Object[] row = new Object[4];
-                row[0] = "Tháng " + rs.getInt("Thang"); // Cột 0: Tên hiển thị trên bảng/đồ thị
-                row[1] = rs.getInt("SoVe");            // Cột 1: Số vé (Dùng cho tongVe += trong Controller)
-                row[2] = rs.getInt("SoHoaDon");        // Cột 2: Số hóa đơn bán được
-                row[3] = rs.getDouble("DoanhThu");      // Cột 3: Tổng tiền (Dùng cho tongDoanhThu += trong Controller)
-                
-                list.add(row);
+                list.add(new Object[]{ "Tháng " + rs.getInt("Thang"), rs.getInt("SoVe"), rs.getInt("SoHoaDon"), rs.getDouble("DoanhThu") });
             }
-        } catch (Exception e) {
-            System.err.println("Lỗi khi lấy dữ liệu thống kê doanh thu theo tháng!");
-            e.printStackTrace();
-        }
+        } catch (Exception e) { e.printStackTrace(); }
         return list;
     }
-    /**
-     * THỐNG KÊ THEO NGÀY (Có hỗ trợ tìm kiếm theo chuỗi ngày yyyy-MM-dd)
-     */
+
+    // 8. Thống kê theo Ngày (Tìm kiếm LIKE theo định dạng Ngày)
     public List<Object[]> getDoanhThuTheoNgay(String tuKhoa) {
         List<Object[]> list = new ArrayList<>();
         String sql = "SELECT CAST(hd.ngayLap AS DATE) AS Ngay, " +
-                     "COUNT(v.maVe) AS SoVe, " +
+                     "COUNT(ct.maVe) AS SoVe, " +
                      "COUNT(DISTINCT hd.maHoaDon) AS SoHoaDon, " +
-                     "SUM(hd.tongTien) AS DoanhThu " +
-                     "FROM HoaDon hd LEFT JOIN Ve v ON hd.maHoaDon = v.maHoaDon " +
-                     "WHERE CAST(hd.ngayLap AS DATE) LIKE ? " +
+                     "SUM(hd.tongThanhToan) AS DoanhThu " +
+                     "FROM HoaDon hd LEFT JOIN CT_HoaDon ct ON hd.maHoaDon = ct.maHoaDon " +
+                     "WHERE CONVERT(varchar, hd.ngayLap, 23) LIKE ? " +
                      "GROUP BY CAST(hd.ngayLap AS DATE) ORDER BY Ngay DESC";
         try (Connection conn = ConnectDB.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps =prepareStatement(sql)) {
             ps.setString(1, "%" + tuKhoa + "%");
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
@@ -178,21 +163,17 @@ public class ThongKeDAO {
         return list;
     }
 
-    /**
-     * THỐNG KÊ THEO NHÂN VIÊN (Có hỗ trợ tìm tên hoặc mã NV)
-     * (Lưu ý: Thay đổi tên bảng/cột NhanVien cho đúng với DB của bạn nếu cần)
-     */
+    // 9. Thống kê theo Nhân Viên
     public List<Object[]> getDoanhThuTheoNhanVien(String tuKhoa) {
         List<Object[]> list = new ArrayList<>();
-        String sql = "SELECT nv.tenNhanVien AS TenNV, " +
-                     "COUNT(v.maVe) AS SoVe, " +
+        String sql = "SELECT nv.tenNV AS TenNV, " +
+                     "COUNT(ct.maVe) AS SoVe, " +
                      "COUNT(DISTINCT hd.maHoaDon) AS SoHoaDon, " +
-                     "SUM(hd.tongTien) AS DoanhThu " +
-                     "FROM HoaDon hd " +
-                     "LEFT JOIN Ve v ON hd.maHoaDon = v.maHoaDon " +
-                     "JOIN NhanVien nv ON hd.maNhanVien = nv.maNhanVien " + // Đảm bảo bảng NhanVien của bạn có cột maNhanVien và tenNhanVien
-                     "WHERE nv.tenNhanVien LIKE ? OR nv.maNhanVien LIKE ? " +
-                     "GROUP BY nv.tenNhanVien ORDER BY DoanhThu DESC";
+                     "SUM(hd.tongThanhToan) AS DoanhThu " +
+                     "FROM HoaDon hd LEFT JOIN CT_HoaDon ct ON hd.maHoaDon = ct.maHoaDon " +
+                     "JOIN NhanVien nv ON hd.maNV = nv.maNV " +
+                     "WHERE nv.tenNV LIKE ? OR nv.maNV LIKE ? " +
+                     "GROUP BY nv.tenNV ORDER BY DoanhThu DESC";
         try (Connection conn = ConnectDB.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, "%" + tuKhoa + "%");
@@ -203,5 +184,9 @@ public class ThongKeDAO {
             }
         } catch (Exception e) { e.printStackTrace(); }
         return list;
+    }
+
+    private PreparedStatement prepareStatement(String sql) throws Exception {
+        return ConnectDB.getInstance().getConnection().prepareStatement(sql);
     }
 }

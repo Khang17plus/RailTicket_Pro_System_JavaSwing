@@ -1,119 +1,124 @@
 package Controller;
 
-import DAO.BanVeDAO;
+import DAO.*;
 import Entity.*;
 import GUI.BanVePanel;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JOptionPane;
 
 public class BanVeController {
     private BanVePanel view;
-    private BanVeDAO dao;
+    private BanVeDAO dao = new BanVeDAO();
+    private KhuyenMaiDAO kmDAO = new KhuyenMaiDAO();
+    private ThueDAO thueDAO = new ThueDAO();
 
     public BanVeController(BanVePanel view) {
         this.view = view;
-        this.dao = new BanVeDAO();
-        this.view.setController(this);
+        view.setController(this);
     }
 
-    // Load danh sách ga từ database
     public void loadDanhSachGa() {
-        List<GaTau> dsGa = dao.getAllGa();
-        view.loadGaComboBox(dsGa);
+        view.loadGaComboBox(dao.getAllGa());
     }
 
-    public void timKiemChuyen(String maGaDi, String maGaDen, LocalDate ngayDi) {
-        if (maGaDi.equals(maGaDen)) {
-            JOptionPane.showMessageDialog(view, "Ga đi và ga đến không được trùng nhau!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        List<ChuyenTau> dsChuyen = dao.timChuyenTheoGaVaNgay(maGaDi, maGaDen, ngayDi);
-        view.hienThiDanhSachChuyen(dsChuyen);
+    public void timKiemChuyen(String gaDi, String gaDen, LocalDate date) {
+        view.hienThiDanhSachChuyen(dao.timChuyenTheoGaVaNgay(gaDi, gaDen, date));
     }
 
-    public void loadToaByChuyen(ChuyenTau chuyen) {
-        List<ToaTau> dsToa = dao.getToaByMaTau(chuyen.getMaTau());
-        view.hienThiDanhSachToa(dsToa);
+    public void loadToaByChuyen(ChuyenTau ct) {
+        view.hienThiDanhSachToa(dao.getToaByMaTau(ct.getMaTau()));
     }
 
     public void loadGheByToa(String maToa, String maChuyen) {
-        List<VeTau> dsVe = dao.getVeByChuyenVaToa(maChuyen, maToa);
-        view.hienThiSoDoGhe(dsVe, maChuyen, maToa);
+        view.hienThiSoDoGhe(dao.getVeByChuyenVaToa(maChuyen, maToa), maChuyen, maToa);
     }
 
-    // Tìm khách hàng theo CCCD
     public KhachHang timKhachHangTheoCCCD(String cccd) {
         return dao.findKhachHangByCCCD(cccd);
     }
 
-    // Tạo khách hàng mới
-    public String taoKhachHangMoi(String tenKH, String cccd, String soDienThoai, String email) {
-        return dao.insertKhachHang(tenKH, cccd, soDienThoai, email);
+    public String taoKhachHangMoi(String ten, String cccd, String sdt, String email) {
+        return dao.insertKhachHang(ten, cccd, sdt, email);
     }
 
-    // Thanh toán với thông tin hành khách
- // Thanh toán với thông tin hành khách
-    public void thanhToan(List<VeTau> dsVeChon, String maKH, String maNV, String phuongThuc) {
-        if (dsVeChon.isEmpty()) {
+    public List<KhuyenMai> getActiveKhuyenMai() {
+        List<KhuyenMai> all = kmDAO.getAll();
+        List<KhuyenMai> active = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+        for (KhuyenMai km : all) {
+            // Kiểm tra điều kiện thời gian của chiến dịch khuyến mãi
+            if (km.isTrangThai() && km.getNgayBatDau() != null && km.getNgayKetThuc() != null
+                    && !now.isBefore(km.getNgayBatDau()) && !now.isAfter(km.getNgayKetThuc())) {
+                active.add(km);
+            }
+        }
+        return active;
+    }
+
+    public List<Thue> getActiveThue() {
+        List<Thue> all = thueDAO.getAll();
+        List<Thue> active = new ArrayList<>();
+        for (Thue t : all) {
+            if (t.isTrangThai()) {
+                active.add(t);
+            }
+        }
+        return active;
+    }
+
+    // Hàm nhận xử lý thanh toán 8 tham số đồng bộ trực tiếp từ BanVePanel
+    public void thanhToan(List<VeTau> dsVe, String maKH, String maNV, String pt,
+                          String maKM, String maThue, double giam, double thue) {
+        if (dsVe.isEmpty()) {
             JOptionPane.showMessageDialog(view, "Giỏ hàng trống!");
             return;
         }
         
-        System.out.println("=== BẮT ĐẦU THANH TOÁN ===");
-        System.out.println("Số vé: " + dsVeChon.size());
-        System.out.println("Mã KH: " + maKH);
-        System.out.println("Mã NV: " + maNV);
-        
-        // Kiểm tra thông tin vé trước khi thanh toán
-        for (VeTau ve : dsVeChon) {
-            System.out.println("Vé: Ghế=" + ve.getSoGhe() + ", Giá=" + ve.getGiaGoc() + 
-                              ", HK=" + ve.getTenHanhKhach() + ", CCCD=" + ve.getSoCCCD());
-        }
-        
         HoaDon hd = new HoaDon();
-        boolean success = dao.datVe(dsVeChon.get(0).getMaChuyen(), dsVeChon, maKH, maNV, phuongThuc, hd);
-        
+        boolean success = dao.datVe(dsVe.get(0).getMaChuyen(), dsVe, maKH, maNV, pt,
+                maKM, maThue, giam, thue, hd);
+                
         if (success) {
-            System.out.println("Thanh toán thành công! Mã HD: " + hd.getMaHoaDon());
-            JOptionPane.showMessageDialog(view, 
-                "✅ Thanh toán thành công!\nMã HD: " + hd.getMaHoaDon() + 
-                "\nTổng tiền: " + String.format("%,.0f VND", hd.getTongThanhToan()),
-                "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            xuatHoaDon(hd, dsVeChon);
+            JOptionPane.showMessageDialog(view, "✅ Đặt vé & Thanh toán thành công!\nMã hóa đơn: " + hd.getMaHoaDon());
+            xuatHoaDonTxt(hd, dsVe);
             view.resetGioHang();
             view.reloadGhe();
         } else {
-            System.err.println("Thanh toán thất bại!");
-            JOptionPane.showMessageDialog(view, 
-                "❌ Thanh toán thất bại!\nVui lòng kiểm tra lại dữ liệu hoặc thử lại sau.", 
-                "Lỗi", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(view, "❌ Thanh toán thất bại! Ghế có thể vừa bị giữ chỗ.", "Lỗi hệ thống", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private void xuatHoaDon(HoaDon hd, List<VeTau> dsVe) {
+    // Hàm xuất tệp tin hóa đơn văn bản dạng .txt để đối chiếu dữ liệu nhanh
+    private void xuatHoaDonTxt(HoaDon hd, List<VeTau> dsVe) {
         String fileName = "hoadon_" + hd.getMaHoaDon() + ".txt";
         try (FileWriter fw = new FileWriter(fileName)) {
             fw.write("========== HÓA ĐƠN BÁN VÉ TÀU ==========\n");
             fw.write("Mã HD: " + hd.getMaHoaDon() + "\n");
-            fw.write("Khách hàng: " + hd.getMaKH() + "\n");
-            fw.write("Ngày lập: " + java.time.LocalDateTime.now() + "\n");
+            fw.write("Khách hàng (Mã): " + hd.getMaKH() + "\n");
+            fw.write("Ngày lập: " + LocalDateTime.now() + "\n");
             fw.write("Chuyến tàu: " + dsVe.get(0).getMaChuyen() + "\n");
+            fw.write("Tổng tiền hàng: " + String.format("%,.0f VND\n", hd.getTongTienHang()));
+            fw.write("Giảm giá: " + String.format("%,.0f VND\n", hd.getTongGiamGia()));
+            fw.write("Thuế: " + String.format("%,.0f VND\n", hd.getTongThue()));
+            fw.write("Tổng thanh toán: " + String.format("%,.0f VND\n", hd.getTongThanhToan()));
             fw.write("----------------------------------------\n");
             fw.write(String.format("%-10s %-10s %-20s %-15s %-15s\n", "Số ghế", "Loại ghế", "Hành khách", "CCCD", "Giá"));
             for (VeTau v : dsVe) {
-                fw.write(String.format("%-10d %-10s %-20s %-15s %-15.0f\n", 
-                    v.getSoGhe(), 
-                    v.getLoaiGhe(), 
-                    v.getTenHanhKhach() != null ? v.getTenHanhKhach() : "",
-                    v.getSoCCCD() != null ? v.getSoCCCD() : "",
-                    v.getGiaGoc()));
+                fw.write(String.format("%-10d %-10s %-20s %-15s %-15.0f\n",
+                        v.getSoGhe(),
+                        v.getLoaiGhe() != null ? v.getLoaiGhe() : "Ghế",
+                        v.getTenHanhKhach() != null ? v.getTenHanhKhach() : "",
+                        v.getSoCCCD() != null ? v.getSoCCCD() : "",
+                        v.getGiaGoc()));
             }
             fw.write("----------------------------------------\n");
-            fw.write("Tổng thanh toán: " + hd.getTongThanhToan() + " VND\n");
-            fw.write("Cảm ơn quý khách đã sử dụng dịch vụ!\n");
+            fw.write("Phương thức: " + hd.getPhuongThucThanhToan() + "\n");
+            fw.write("Cảm ơn quý khách đã tin dùng dịch vụ!\n");
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -18,12 +18,11 @@ public class HoaDonPanel extends JPanel {
     private Component component = new Component();
     private JTable table;
     private DefaultTableModel tableModel;
-   private Controller.HoaDonController controller; 
     
-    public void setController(Controller.HoaDonController controller) {
-        this.controller = controller;
-    }
-    
+    // 🔥 BIẾN THÊM MỚI: Quản lý 2 Label KPI toàn cục để cập nhật số liệu thực tế
+    private JLabel lblValueDoanhThu;
+    private JLabel lblValueTongHD;
+
     public JButton createButtonExcel(String Cmt) {
         JButton btn = new JButton(Cmt);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -49,7 +48,8 @@ public class HoaDonPanel extends JPanel {
         return btn;
     }
 
-    public JPanel createCardstatistical(String title, String value) {
+    // 🔥 SỬA ĐỔI: Nhận trực tiếp JLabel từ ngoài truyền vào để không bị cố định giá trị cứng
+    public JPanel createCardstatistical(String title, JLabel valueLabel) {
         JPanel card = new JPanel(new BorderLayout(15, 0));
         JLabel iconLabel = new JLabel("📄"); 
         iconLabel.setFont(new Font("Segoe UI", Font.PLAIN, 24));
@@ -63,7 +63,6 @@ public class HoaDonPanel extends JPanel {
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         titleLabel.setForeground(Color.GRAY);
 
-        JLabel valueLabel = new JLabel(value);
         valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
         valueLabel.setForeground(Color.BLACK);
 
@@ -96,10 +95,14 @@ public class HoaDonPanel extends JPanel {
         headerL.add(title);
         headerL.add(sub);
 
+        // 🔥 KHỞI TẠO ĐỘNG: Tạo 2 Label động thay vì truyền chuỗi cứng cố định
+        lblValueDoanhThu = new JLabel("0 VNĐ");
+        lblValueTongHD = new JLabel("0");
+
         JPanel headerR = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
         headerR.setBackground(new Color(245, 247, 250));
-        headerR.add(createCardstatistical("Doanh thu", "25,400k"));
-        headerR.add(createCardstatistical("Tổng hóa đơn", "150"));
+        headerR.add(createCardstatistical("Doanh thu", lblValueDoanhThu));
+        headerR.add(createCardstatistical("Tổng hóa đơn", lblValueTongHD));
 
         // --- ACTION PANEL ---
         JPanel actionPanel = new JPanel(new BorderLayout());
@@ -155,8 +158,23 @@ public class HoaDonPanel extends JPanel {
         main.add(scrollPane, BorderLayout.CENTER);
         add(main, BorderLayout.CENTER);
 
+        // --- LẮNG NGHE SỰ KIỆN DOUBLE-CLICK TRÊN BẢNG ---
+        table.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2) { // Nhấp đúp chuột liên tiếp
+                    int row = table.getSelectedRow();
+                    if (row != -1) {
+                        String maHD = tableModel.getValueAt(row, 0).toString();
+                        // 🔥 Thay đổi lệnh thông báo cũ thành gọi cửa sổ hiển thị dữ liệu thật
+                        hienThiDialogChiTiet(maHD);
+                    }
+                }
+            }
+        });
+
         // --- GỌI HÀM LOAD DỮ LIỆU TẠI ĐÂY ---
-//        loadDataFromDatabase(); 
+        loadDataFromDatabase(); 
     }
 
     private void hienThiChiTiet() {
@@ -166,8 +184,8 @@ public class HoaDonPanel extends JPanel {
             return;
         }
         String maHD = tableModel.getValueAt(row, 0).toString();
-        JOptionPane.showMessageDialog(this, "Đang hiển thị chi tiết cho hóa đơn: " + maHD);
-        // Thịnh viết thêm JDialog để hiện bảng CT_HoaDon tại đây nhé
+        // 🔥 Gọi Dialog hiển thị dữ liệu thật thay vì hiển thị thông báo thông thường
+        hienThiDialogChiTiet(maHD);
     }
 
     private void handleInVe() {
@@ -178,6 +196,67 @@ public class HoaDonPanel extends JPanel {
         }
         String maHD = tableModel.getValueAt(row, 0).toString();
         xuatVeQR(maHD);
+    }
+
+    // 🔥 CHỨC NĂNG MỚI THÊM: HIỂN THỊ CỬA SỔ DIALOG CHI TIẾT VÉ THUỘC HÓA ĐƠN
+    private void hienThiDialogChiTiet(String maHD) {
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Chi tiết hóa đơn: " + maHD, true);
+        dialog.setSize(750, 400);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout());
+
+        // Tiêu đề của Dialog phụ
+        JLabel lblTitle = new JLabel("DANH SÁCH VÉ THUỘC HÓA ĐƠN: " + maHD, JLabel.CENTER);
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        lblTitle.setBorder(BorderFactory.createEmptyBorder(15, 10, 15, 10));
+        dialog.add(lblTitle, BorderLayout.NORTH);
+
+        // Khởi tạo bảng danh sách vé chi tiết bên trong dialog
+        String[] columnNames = {"Mã Vé", "Tên Hành Khách", "Số CCCD", "Loại Vé", "Giá Bán Thực Tế", "Thành Tiền"};
+        DefaultTableModel detailModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) { return false; }
+        };
+        JTable detailTable = new JTable(detailModel);
+        detailTable.setRowHeight(30);
+        
+        JScrollPane scrollPane = new JScrollPane(detailTable);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder(0, 15, 15, 15));
+        dialog.add(scrollPane, BorderLayout.CENTER);
+
+        // Câu truy vấn lấy danh sách chi tiết các vé của mã hóa đơn này
+        String sql = "SELECT ct.maVe, v.tenHanhKhach, v.soCCCD, v.loaiVe, ct.giaBanThucTe, ct.thanhTien " +
+                     "FROM CT_HoaDon ct " +
+                     "JOIN VeTau v ON ct.maVe = v.maVe " +
+                     "WHERE ct.maHoaDon = ?";
+
+        try (Connection con = ConnectDB.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            
+            ps.setString(1, maHD);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    detailModel.addRow(new Object[]{
+                        rs.getString("maVe"),
+                        rs.getNString("tenHanhKhach"),
+                        rs.getString("soCCCD"),
+                        rs.getNString("loaiVe"),
+                        String.format("%,.0f VNĐ", rs.getDouble("giaBanThucTe")),
+                        String.format("%,.0f VNĐ", rs.getDouble("thanhTien"))
+                    });
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(dialog, "Lỗi khi tải chi tiết hóa đơn: " + e.getMessage());
+        }
+
+        // Trường hợp khẩn cấp nếu hóa đơn chưa có dữ liệu chi tiết vé
+        if (detailModel.getRowCount() == 0) {
+            detailModel.addRow(new Object[]{"Không tìm thấy dữ liệu vé chi tiết", "-", "-", "-", "-", "-"});
+        }
+
+        dialog.setVisible(true);
     }
 
     public void xuatVeQR(String maHD) {
@@ -236,27 +315,41 @@ public class HoaDonPanel extends JPanel {
             e.printStackTrace();
         }
     }
+    
+    // 🔥 SỬA ĐỔI: Tự động cộng dồn doanh thu và số hóa đơn thực tế từ Database quét được
     public void loadDataFromDatabase() {
         String sql = "SELECT hd.maHoaDon, hd.ngayLap, kh.tenKH, hd.tongThue, hd.tongGiamGia, hd.tongThanhToan " +
                      "FROM HoaDon hd " +
                      "JOIN KhachHang kh ON hd.maKH = kh.maKH";
 
         tableModel.setRowCount(0); 
+        
+        double tongDoanhThuThucTe = 0;
+        int tongSoHoaDonThucTe = 0;
 
         try (Connection con = ConnectDB.getInstance().getConnection();
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
+                double thanhToan = rs.getDouble("tongThanhToan");
+                tongDoanhThuThucTe += thanhToan;
+                tongSoHoaDonThucTe++;
+
                 tableModel.addRow(new Object[]{
                     rs.getString("maHoaDon"),
                     rs.getTimestamp("ngayLap"),
                     rs.getNString("tenKH"),
                     String.format("%,.0f", rs.getDouble("tongThue")),      
                     String.format("%,.0f", rs.getDouble("tongGiamGia")),   
-                    String.format("%,.0f VNĐ", rs.getDouble("tongThanhToan")) 
+                    String.format("%,.0f VNĐ", thanhToan) 
                 });
             }
+            
+            // 🔥 Đồng bộ hiển thị số liệu thật lên 2 thẻ Card góc trên bên phải màn hình
+            lblValueDoanhThu.setText(String.format("%,.0f VNĐ", tongDoanhThuThucTe));
+            lblValueTongHD.setText(String.valueOf(tongSoHoaDonThucTe));
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -266,23 +359,34 @@ public class HoaDonPanel extends JPanel {
         // 1. Xóa toàn bộ dữ liệu cũ trên bảng trước khi đổ mới
         tableModel.setRowCount(0);
 
+        double tongDoanhThuThucTe = 0;
+        int tongSoHoaDonThucTe = 0;
+
         // 2. Duyệt qua danh sách hóa đơn từ Database/DAO truyền vào
         for (HoaDon hd : ds) {
+            tongDoanhThuThucTe += hd.getTongThanhToan();
+            tongSoHoaDonThucTe++;
+
             // Định dạng số tiền để hiển thị đẹp mắt (ví dụ: 1,000,000 VNĐ)
             String thueStr = String.format("%,.0f", hd.getTongThue());
             String giamGiaStr = String.format("%,.0f", hd.getTongGiamGia());
             String tongTienStr = String.format("%,.0f VNĐ", hd.getTongThanhToan());
 
             // 3. Thêm dòng mới vào tableModel theo đúng thứ tự các cột:
-            // {"Mã HĐ", "Ngày Lập", "Khách Hàng", "Thuế", "Giảm Giá", "Tổng Thanh Toán"}
             tableModel.addRow(new Object[] {
                 hd.getMaHoaDon(),               // Cột Mã HĐ
                 hd.getNgayLap(),                // Cột Ngày Lập
-                hd.getMaKH(),                   // Cột Khách Hàng (Mã hoặc Tên tùy DAO)
+                hd.getMaKH(),                   // Cột Khách Hàng
                 thueStr,                        // Cột Thuế
                 giamGiaStr,                     // Cột Giảm Giá
                 tongTienStr                     // Cột Tổng Thanh Toán
             });
+        }
+        
+        // Cập nhật lại KPI nếu gọi qua hàm setData
+        if (lblValueDoanhThu != null && lblValueTongHD != null) {
+            lblValueDoanhThu.setText(String.format("%,.0f VNĐ", tongDoanhThuThucTe));
+            lblValueTongHD.setText(String.valueOf(tongSoHoaDonThucTe));
         }
     }
 }

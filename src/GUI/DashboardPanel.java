@@ -3,6 +3,8 @@ package GUI;
 import javax.swing.*;
 import org.jfree.chart.ChartPanel;
 import java.awt.*;
+import java.awt.event.ComponentAdapter; // Đã thêm
+import java.awt.event.ComponentEvent;   // Đã thêm
 import java.util.Map;
 import Controller.TrangChuController; // Import Controller quản lý dữ liệu trang chủ
 
@@ -148,6 +150,18 @@ public class DashboardPanel extends JPanel {
         
         // 🔥 KÍCH HOẠT CONTROLLER: Tự động kết nối DB quét dữ liệu thật đổ lên giao diện khi Panel khởi chạy
         this.controller = new TrangChuController(this);
+
+        // =========================================================
+        // 🔥 BỔ SUNG: TỰ ĐỘNG LOAD LẠI DỮ LIỆU KHI CHUYỂN TAB VÀO ĐÂY
+        // =========================================================
+        this.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentShown(ComponentEvent e) {
+                if (controller != null) {
+                    controller.loadThongKeHeThong();
+                }
+            }
+        });
     }
     
     /**

@@ -16,6 +16,11 @@ public class Main extends JFrame {
     // ==========================================
     // 1. KHAI BÁO CÁC THÀNH PHẦN MVC
     // ==========================================
+	private DashboardPanel dashboard;
+	TrangChuController dashboardController;
+	
+	
+	
     private KhachHangPanel khp;
     private KhachHangController khController;
     
@@ -90,6 +95,10 @@ public class Main extends JFrame {
     // HÀM KHỞI TẠO MVC (Ráp nối View và Controller)
     // ==========================================
     private void initMVC() {
+    	 dashboard = new DashboardPanel();
+    	 dashboardController = new TrangChuController(dashboard);
+//    	dashboard.setController(dashboardController);
+    	
         khp = new KhachHangPanel();
         khController = new KhachHangController(khp);
         khp.setController(khController);
@@ -109,7 +118,7 @@ public class Main extends JFrame {
         gatau = new GaTauPanel();
         gataucontroller = new GaTauController(gatau);
         gatau.setController(gataucontroller);
-        
+       
         chuyenTauPanel = new ChuyenTauPanel();
         chuyenTauController = new ChuyenTauController(chuyenTauPanel);
         chuyenTauPanel.setController(chuyenTauController);
@@ -133,7 +142,7 @@ public class Main extends JFrame {
         
         hoaDonPanel = new HoaDonPanel();
         hoaDonController = new HoaDonController(hoaDonPanel);
-        hoaDonPanel.setController(hoaDonController);
+//        hoaDonPanel.setController(hoaDonController);
         
     }
 

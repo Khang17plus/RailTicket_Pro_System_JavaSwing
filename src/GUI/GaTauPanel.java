@@ -26,6 +26,11 @@ public class GaTauPanel extends JPanel {
     private JTable table;
     private DefaultTableModel tableModel;
     
+    // 🔥 BIẾN THÊM MỚI: Quản lý các Label KPI toàn cục để cập nhật số liệu theo Database thật
+    private JLabel lblTongGa;
+    private JLabel lblHoatDong;
+    private JLabel lblBaoTri;
+    
     public void setController(GaTauController controller) {
         this.controller = controller;
     }
@@ -36,12 +41,14 @@ public class GaTauPanel extends JPanel {
         String style = "arc:12; focusWidth:0; font: bold 13;";
         if (Cmt.contains("Nhập")) {
             btn.setBackground(new Color(59,130,246)); // xanh dương
+            btn.setForeground(Color.WHITE);
         } else if(Cmt.contains("Tìm"))  {
             btn.setBackground(Color.gray); // nền xám
             btn.setForeground(Color.BLACK); // chữ đen
-            btn.setPreferredSize(new Dimension(60, 36));
+            btn.setPreferredSize(new Dimension(80, 36));
         } else {
             btn.setBackground(new Color(34,197,94)); // xanh lá
+            btn.setForeground(Color.WHITE);
         }
         btn.setPreferredSize(new Dimension(140, 36)); 
         btn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
@@ -50,7 +57,8 @@ public class GaTauPanel extends JPanel {
         return btn;
     }
     
-    public JPanel createCardstatistical(String IconURL, String title, int value) {
+    // 🔥 SỬA ĐỔI: Nhận đối tượng JLabel từ ngoài truyền vào để thay đổi số liệu động
+    public JPanel createCardstatistical(String IconURL, String title, JLabel valueLabel) {
         JPanel card = new JPanel(new BorderLayout(15,0));
         ImageIcon icon = new ImageIcon(IconURL);
         Image img = icon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
@@ -64,7 +72,6 @@ public class GaTauPanel extends JPanel {
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         titleLabel.setForeground(Color.GRAY);
         
-        JLabel valueLabel = new JLabel(String.valueOf(value));
         valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
         valueLabel.setForeground(Color.BLACK);
         
@@ -91,15 +98,24 @@ public class GaTauPanel extends JPanel {
         JPanel headerL = new JPanel();
         headerL.setLayout(new BoxLayout(headerL, BoxLayout.Y_AXIS));
         headerL.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        headerL.setBackground(new Color(245, 247, 250));
         JPanel headerR = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
+        headerR.setBackground(new Color(245, 247, 250));
         
-        // Thống kê giả định cho Ga Tàu
-        JPanel cardTongGa = createCardstatistical("img/user2.png", "Tổng số nhà ga ", 15);
-        JPanel cardHoatDong = createCardstatistical("img/user2.png", "Đang hoạt động ", 14);
-        JPanel cardBaoTri = createCardstatistical("img/user2.png", "Đang bảo trì ", 1);
+        // 🔥 KHỞI TẠO ĐỘNG: Tạo các nhãn động với giá trị ban đầu là "0"
+        lblBaoTri = new JLabel("0");
+        lblHoatDong = new JLabel("0");
+        lblTongGa = new JLabel("0");
+        
+        // Thống kê liên kết trực tiếp với các Label toàn cục
+        JPanel cardBaoTri = createCardstatistical("img/user2.png", "Đang bảo trì ", lblBaoTri);
+        JPanel cardHoatDong = createCardstatistical("img/user2.png", "Đang hoạt động ", lblHoatDong);
+        JPanel cardTongGa = createCardstatistical("img/user2.png", "Tổng số nhà ga ", lblTongGa);
         
         JPanel actionPanel = new JPanel(new BorderLayout());
+        actionPanel.setBackground(new Color(245, 247, 250));
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER,10,0));
+        searchPanel.setBackground(new Color(245, 247, 250));
         JTextField txtSearch = new JTextField();
         txtSearch.setPreferredSize(new Dimension(400, 36));
         txtSearch.putClientProperty("FlatLaf.style", "arc:10");
@@ -121,6 +137,7 @@ public class GaTauPanel extends JPanel {
         searchPanel.add(btnSearch);
         
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT,10,0));
+        rightPanel.setBackground(new Color(245, 247, 250));
 
         JButton imports= createButtonExcel("Nhập file excel");
         JButton export = createButtonExcel("Xuất file excel");
@@ -176,9 +193,8 @@ public class GaTauPanel extends JPanel {
         };
         
         table = new JTable(tableModel);
-        table.setRowHeight(40);
-        table.setFont(new Font("Arial", Font.PLAIN, 13));
         table.setRowHeight(35); 
+        table.setFont(new Font("Arial", Font.PLAIN, 13));
         table.setGridColor(new Color(235, 235, 235)); 
         table.setShowVerticalLines(false); 
         table.setSelectionBackground(new Color(232, 240, 254)); 
@@ -200,14 +216,36 @@ public class GaTauPanel extends JPanel {
         add(main, BorderLayout.CENTER);
     }
 
+    // 🔥 SỬA ĐỔI CHÍNH: Tính toán số lượng thực tế từ Database đẩy lên
     public void setData(List<GaTau> list) {
         tableModel.setRowCount(0);
+        
+        int tongGa = 0;
+        int dangHoatDong = 0;
+        int dangBaoTri = 0;
+        
         for(GaTau ga: list) {
             tableModel.addRow(new Object[] {
                 ga.getMaGa(), ga.getTenGa(), ga.getDiaChi(),
                 ga.getSoDienThoai(), ga.getTrangThai()
             });
+            
+            // Đếm số lượng dựa trên trạng thái thực tế trong CSDL
+            tongGa++;
+            if (ga.getTrangThai() != null) {
+                String status = ga.getTrangThai().trim();
+                if (status.equalsIgnoreCase("Đang hoạt động")) {
+                    dangHoatDong++;
+                } else if (status.equalsIgnoreCase("Đang bảo trì") || status.equalsIgnoreCase("Bảo trì tạm thời")) {
+                    dangBaoTri++;
+                }
+            }
         }
+        
+        // 🔥 Cập nhật con số thực tế lên giao diện Cards
+        lblTongGa.setText(String.valueOf(tongGa));
+        lblHoatDong.setText(String.valueOf(dangHoatDong));
+        lblBaoTri.setText(String.valueOf(dangBaoTri));
     }
    
     public DefaultTableModel getTableModel() {
@@ -243,9 +281,6 @@ public class GaTauPanel extends JPanel {
         return submenu;
     }
     
-    
-    // xuat 
-    
     private void exportExcel() {
         JFileChooser fc = new JFileChooser();
         fc.setSelectedFile(new File("DanhSachGa.xlsx"));
@@ -253,8 +288,7 @@ public class GaTauPanel extends JPanel {
         if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             String path = fc.getSelectedFile().getAbsolutePath();
             if (!path.endsWith(".xlsx")) path += ".xlsx";
-            // Lấy dữ liệu từ bảng hiện tại (nếu có) hoặc lấy tất cả từ DB
-            List<GaTau> currentData = getDataFromTable(); // cần viết hàm lấy dữ liệu từ table model
+            List<GaTau> currentData = getDataFromTable();
             boolean success = controller.exportToExcel(path, currentData);
             if (success) {
                 JOptionPane.showMessageDialog(this, "Xuất file thành công!");
@@ -264,7 +298,6 @@ public class GaTauPanel extends JPanel {
         }
     }
     
-    // lay du lieu tu form 
     public List<GaTau> getDataFromTable() {
         List<GaTau> list = new ArrayList<>();
         DefaultTableModel model = (DefaultTableModel) table.getModel();
@@ -279,8 +312,7 @@ public class GaTauPanel extends JPanel {
         }
         return list;
     }
-    // Thêm Ga Tàu
- // Thêm Ga Tàu
+
     private void themGaTau() {
         String[] labels = {"Mã Ga", "Tên Ga", "Địa Chỉ", "Số Điện Thoại", "Trạng Thái"};
         JTextField[] fields = new JTextField[labels.length];
@@ -288,24 +320,18 @@ public class GaTauPanel extends JPanel {
             fields[i] = new JTextField();
         }
 
-        // --- XỬ LÝ PHÁT SINH TỰ ĐỘNG ---
-        
-        // 1. Mã Ga: Khóa ô nhập, tự động lấy mã từ Controller
         fields[0].setEditable(false);
         fields[0].setBackground(new Color(240, 240, 240)); 
         if (controller != null) {
-            fields[0].setText(controller.generateNextMaGa()); // Gọi hàm phát sinh mã
+            fields[0].setText(controller.generateNextMaGa()); 
         } else {
-            fields[0].setText("GA001"); // Backup nếu controller chưa init kịp
+            fields[0].setText("GA001"); 
         }
 
-        // 2. Trạng Thái: Khóa ô nhập, mặc định là "Đang hoạt động"
         fields[4].setEditable(false);
         fields[4].setBackground(new Color(240, 240, 240));
         fields[4].setText("Đang hoạt động");
         
-        // ---------------------------------
-
         JButton btnCancel = new JButton("Hủy bỏ");
         JButton btnSave = new JButton("Lưu Ga Tàu");
 
@@ -325,7 +351,6 @@ public class GaTauPanel extends JPanel {
             String sdt = fields[3].getText().trim();
             String trangThai = fields[4].getText().trim();
 
-            // Đã bỏ check rỗng cho Mã Ga vì máy tự sinh
             if (tenGa.isEmpty() || diaChi.isEmpty()) {
                 JOptionPane.showMessageDialog(dialog, "Vui lòng nhập đủ Tên và Địa chỉ ga!", "Lỗi", JOptionPane.WARNING_MESSAGE);
                 return;
@@ -338,10 +363,8 @@ public class GaTauPanel extends JPanel {
                 
                 if (isSuccess) {
                     JOptionPane.showMessageDialog(dialog, "Thêm ga tàu thành công!");
-                    tableModel.addRow(new Object[]{
-                        gaNew.getMaGa(), gaNew.getTenGa(), gaNew.getDiaChi(), 
-                        gaNew.getSoDienThoai(), gaNew.getTrangThai()
-                    });
+                    // Kích hoạt load lại dữ liệu để các thẻ Card tự cập nhật tăng số lượng
+                    controller.loadDataToTable();
                     dialog.dispose();
                 } else {
                     JOptionPane.showMessageDialog(dialog, "Thêm thất bại! Lỗi hệ thống hoặc trùng mã.", "Lỗi", JOptionPane.ERROR_MESSAGE);
@@ -353,7 +376,7 @@ public class GaTauPanel extends JPanel {
 
         dialog.setVisible(true);
     }
-    // Xóa Ga Tàu
+
     private void xoaGaTau() {
         int selectedRow = table.getSelectedRow();
         if (selectedRow == -1) {
@@ -366,13 +389,14 @@ public class GaTauPanel extends JPanel {
         int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xóa ga tàu " + maGa + "?", "Xác nhận", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
             if (controller != null && controller.xoaGaTau(maGa)) {
-                tableModel.removeRow(selectedRow); 
                 JOptionPane.showMessageDialog(this, "Xóa thành công!");
+                controller.loadDataToTable(); // Refresh để cập nhật lại Card giảm số lượng
             } else {
                 JOptionPane.showMessageDialog(this, "Xóa thất bại! Ga tàu có thể đang có lịch trình chuyến tàu.", "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
+
     private void importExcel() {
         JFileChooser fc = new JFileChooser();
         fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
@@ -381,11 +405,10 @@ public class GaTauPanel extends JPanel {
             String path = fc.getSelectedFile().getAbsolutePath();
             String result = controller.importExcel(path);
             JOptionPane.showMessageDialog(this, result);
-            controller.loadDataToTable(); // refresh bảng
+            controller.loadDataToTable(); 
         }
     }
 
-    // Sửa Ga Tàu
     private void suaGaTau() {
         int selectedRow = table.getSelectedRow();
         if (selectedRow == -1) {
@@ -432,12 +455,8 @@ public class GaTauPanel extends JPanel {
             GaTau gaUpdate = new GaTau(maCu, tenMoi, diaChiMoi, sdtMoi, trangThaiMoi);
 
             if (controller != null && controller.capNhatGaTau(gaUpdate)) {
-                tableModel.setValueAt(tenMoi, selectedRow, 1);
-                tableModel.setValueAt(diaChiMoi, selectedRow, 2);
-                tableModel.setValueAt(sdtMoi, selectedRow, 3);
-                tableModel.setValueAt(trangThaiMoi, selectedRow, 4);
-                
                 JOptionPane.showMessageDialog(dialog, "Cập nhật thành công!");
+                controller.loadDataToTable(); // Gọi lại để đồng bộ cả Card nếu trạng thái ga bị đổi
                 dialog.dispose();
             } else {
                 JOptionPane.showMessageDialog(dialog, "Cập nhật thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
@@ -447,7 +466,6 @@ public class GaTauPanel extends JPanel {
         dialog.setVisible(true);
     }
 
-    // Tra cứu Ga Tàu
     private void traCuuGaTau() {
         String keyword = JOptionPane.showInputDialog(this, "Nhập Tên hoặc Địa chỉ ga cần tìm:");
         if (keyword != null && !keyword.trim().isEmpty()) {
