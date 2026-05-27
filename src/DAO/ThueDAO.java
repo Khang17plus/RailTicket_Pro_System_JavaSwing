@@ -5,17 +5,16 @@ import Entity.Thue;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.sql.Timestamp; // Cần cái này cho biến ts
-import java.time.LocalDateTime; // Cần cái này cho .toLocalDateTime()
-import Entity.Thue; // Cần cái này cho class Thue
+import java.sql.Timestamp; 
+import java.time.LocalDateTime; 
 
 public class ThueDAO {
 
-    // 1. LẤY TOÀN BỘ DỮ LIỆU TỪ DB SQL (Có sắp xếp để dễ nhìn)
+    // 1. LẤY TOÀN BỘ DỮ LIỆU TỪ DB SQL (Sắp xếp tăng dần theo số)
     public List<Thue> getAll() {
         List<Thue> list = new ArrayList<>();
-        // Thêm ORDER BY để mã thuế mới nhất lên đầu bảng
-        String sql = "SELECT maThue, tenThue, phanTram, ngayBatDau, trangThai FROM Thue ORDER BY maThue DESC";
+        String sql = "SELECT maThue, tenThue, phanTram, ngayBatDau, trangThai FROM Thue " +
+                     "ORDER BY CAST(SUBSTRING(maThue, 5, LEN(maThue)) AS INT) ASC";
         
         try (Connection conn = ConnectDB.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -75,7 +74,7 @@ public class ThueDAO {
         return false;
     }
 
-    // 4. XÓA MỀM (SOFT DELETE) - Chuyển trạng thái về ngừng áp dụng để an toàn cho Hóa đơn
+    // 4. XÓA MỀM (SOFT DELETE)
     public boolean delete(String maThue) {
         String sql = "UPDATE Thue SET trangThai = 0 WHERE maThue = ?";
         try (Connection conn = ConnectDB.getInstance().getConnection();
@@ -92,7 +91,9 @@ public class ThueDAO {
     // 5. TÌM KIẾM DỮ LIỆU TRONG DB SQL
     public List<Thue> searchThue(String keyword) {
         List<Thue> list = new ArrayList<>();
-        String sql = "SELECT maThue, tenThue, phanTram, ngayBatDau, trangThai FROM Thue WHERE maThue LIKE ? OR tenThue LIKE ? ORDER BY maThue DESC";
+        String sql = "SELECT maThue, tenThue, phanTram, ngayBatDau, trangThai FROM Thue " +
+                     "WHERE maThue LIKE ? OR tenThue LIKE ? " +
+                     "ORDER BY CAST(SUBSTRING(maThue, 5, LEN(maThue)) AS INT) ASC";
         try (Connection conn = ConnectDB.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
@@ -116,5 +117,48 @@ public class ThueDAO {
             System.err.println("Lỗi searchThue() trong ThueDAO: " + e.getMessage());
         }
         return list;
+    }
+
+    // =========================================================================
+    // 🔥 ĐÃ SỬA: LẤY MÃ THUẾ LỚN NHẤT TRẢ VỀ NULL NẾU DB TRỐNG
+    // =========================================================================
+    public String getMaxMaThue() {
+        String maxMa = null; // Sửa đổi từ "" sang null để đồng bộ
+        String sql = "SELECT TOP 1 maThue FROM Thue ORDER BY CAST(SUBSTRING(maThue, 5, LEN(maThue)) AS INT) DESC";
+
+        try (Connection conn = ConnectDB.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            if (rs.next()) {
+                maxMa = rs.getString(1);
+            }
+        } catch (SQLException e) {
+            System.err.println("Lỗi getMaxMaThue() trong ThueDAO: " + e.getMessage());
+        }
+        return maxMa;
+    }
+
+    // 7. PHÁT SINH MÃ TỰ ĐỘNG NGAY TRONG DAO (ĐÃ CHUẨN HÓA CHECK TRỐNG)
+    public String phatSinhMaTuDong() {
+        String maxMa = getMaxMaThue();
+        
+        // Kiểm tra chặt chẽ, chỉ cần dính một trong các điều kiện trống là gán mã đầu tiên ngay
+        if (maxMa == null || maxMa.trim().isEmpty() || maxMa.trim().equals("")) {
+            return "THUE001";
+        }
+        
+        try {
+            // Cắt chữ "THUE" để lấy phần số ("THUE001" -> "001")
+            String phanSoStr = maxMa.substring(4).trim();
+            int phanSo = Integer.parseInt(phanSoStr);
+            phanSo++; 
+            
+            return String.format("THUE%03d", phanSo);
+            
+        } catch (Exception e) {
+            System.err.println("Lỗi thuật toán phatSinhMaTuDong() trong ThueDAO: " + e.getMessage());
+            return "THUE001"; // Gặp lỗi định dạng chuỗi bất thường thì trả về mã an toàn
+        }
     }
 }

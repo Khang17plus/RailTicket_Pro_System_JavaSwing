@@ -25,6 +25,38 @@ public class HoaDonDAO {
         }
         return list;
     }
+    public List<HoaDon> searchHoaDon(String keyword) {
+
+        List<HoaDon> list = new ArrayList<>();
+
+        String sql = "SELECT * FROM HoaDon " +
+                     "WHERE maHoaDon LIKE ? " +
+                     "OR maKH LIKE ? " +
+                     "OR maNV LIKE ? " +
+                     "ORDER BY ngayLap DESC";
+
+        try (Connection conn = ConnectDB.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            String searchValue = "%" + keyword + "%";
+
+            ps.setString(1, searchValue);
+            ps.setString(2, searchValue);
+            ps.setString(3, searchValue);
+
+            try (ResultSet rs = ps.executeQuery()) {
+
+                while (rs.next()) {
+                    list.add(mapResultSet(rs));
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return list;
+    }
 
     // 🔹 Thêm hóa đơn mới
     public boolean insert(HoaDon hd) {

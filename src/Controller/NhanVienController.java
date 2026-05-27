@@ -36,23 +36,37 @@ public class NhanVienController {
     public boolean updateNhanVien(NhanVien nv) {
         return dao.update(nv);
     }
-    
     public String phatSinhMaTuDong() {
-        String maxMa = dao.getMaxMaNhanVien();
-        if (maxMa == null || maxMa.trim().isEmpty()) {
-            return "NV001";
-        }
-        try {
-            String phanSoStr = maxMa.substring(2).trim();
-            int phanSo = Integer.parseInt(phanSoStr);
-            phanSo++;
-            return String.format("NV%02d", phanSo);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "NV" + (System.currentTimeMillis() % 1000);
-        }
+    String maxMa = dao.getMaxMaNhanVien();
+    
+    // 1. Kiểm tra rỗng
+    if (maxMa == null || maxMa.trim().isEmpty()) {
+        return "NV001";
     }
     
+    try {
+        // 2. Dùng Regex để loại bỏ toàn bộ chữ cái, CHỈ giữ lại số (Cực kỳ an toàn)
+        // Ví dụ: "NV015" -> "015", "NVABC" -> "", "123" -> "123"
+        String numericPart = maxMa.replaceAll("[^0-9]", ""); 
+        
+        // Nếu bóc tách xong mà không có số nào thì reset về NV001
+        if (numericPart.isEmpty()) {
+            return "NV001";
+        }
+        
+        // 3. Ép kiểu và cộng thêm 1
+        int phanSo = Integer.parseInt(numericPart);
+        phanSo++;
+        
+        // 4. Định dạng chuẩn 3 chữ số (NV001, NV002,... NV999)
+        return String.format("NV%03d", phanSo); 
+        
+    } catch (Exception e) {
+        e.printStackTrace();
+        // Backup cuối cùng nếu lỗi hệ thống cực nặng
+        return "NV" + (System.currentTimeMillis() % 1000);
+    }
+}
     public void timKiemNhanVien(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
             loadDataToTable();

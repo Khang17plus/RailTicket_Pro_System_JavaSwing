@@ -55,22 +55,41 @@ public class BanVeController {
     }
 
     // Thanh toán với thông tin hành khách
+ // Thanh toán với thông tin hành khách
     public void thanhToan(List<VeTau> dsVeChon, String maKH, String maNV, String phuongThuc) {
         if (dsVeChon.isEmpty()) {
             JOptionPane.showMessageDialog(view, "Giỏ hàng trống!");
             return;
         }
         
+        System.out.println("=== BẮT ĐẦU THANH TOÁN ===");
+        System.out.println("Số vé: " + dsVeChon.size());
+        System.out.println("Mã KH: " + maKH);
+        System.out.println("Mã NV: " + maNV);
+        
+        // Kiểm tra thông tin vé trước khi thanh toán
+        for (VeTau ve : dsVeChon) {
+            System.out.println("Vé: Ghế=" + ve.getSoGhe() + ", Giá=" + ve.getGiaGoc() + 
+                              ", HK=" + ve.getTenHanhKhach() + ", CCCD=" + ve.getSoCCCD());
+        }
+        
         HoaDon hd = new HoaDon();
         boolean success = dao.datVe(dsVeChon.get(0).getMaChuyen(), dsVeChon, maKH, maNV, phuongThuc, hd);
         
         if (success) {
-            JOptionPane.showMessageDialog(view, "Thanh toán thành công! Mã HD: " + hd.getMaHoaDon());
+            System.out.println("Thanh toán thành công! Mã HD: " + hd.getMaHoaDon());
+            JOptionPane.showMessageDialog(view, 
+                "✅ Thanh toán thành công!\nMã HD: " + hd.getMaHoaDon() + 
+                "\nTổng tiền: " + String.format("%,.0f VND", hd.getTongThanhToan()),
+                "Thành công", JOptionPane.INFORMATION_MESSAGE);
             xuatHoaDon(hd, dsVeChon);
             view.resetGioHang();
             view.reloadGhe();
         } else {
-            JOptionPane.showMessageDialog(view, "Thanh toán thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            System.err.println("Thanh toán thất bại!");
+            JOptionPane.showMessageDialog(view, 
+                "❌ Thanh toán thất bại!\nVui lòng kiểm tra lại dữ liệu hoặc thử lại sau.", 
+                "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 

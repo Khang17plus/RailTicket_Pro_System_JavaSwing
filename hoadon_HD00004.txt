@@ -1,0 +1,11 @@
+========== HÓA ĐƠN BÁN VÉ TÀU ==========
+Mã HD: HD00004
+Khách hàng: KH007
+Ngày lập: 2026-05-27T21:16:04.929774700
+Chuyến tàu: CHUYEN_SE1_01
+----------------------------------------
+Số ghế     Loại ghế   Hành khách           CCCD            Giá            
+4          Ghế ngồi   Khang                324234234       200000         
+----------------------------------------
+Tổng thanh toán: 200000.0 VND
+Cảm ơn quý khách đã sử dụng dịch vụ!

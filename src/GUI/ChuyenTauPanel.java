@@ -269,7 +269,6 @@ public class ChuyenTauPanel extends JPanel {
         String[] labels = {"Mã Chuyến", "Mã Tàu", "Ga Đi", "Ga Đến", "Thời Gian Đi", "Thời Gian Đến", "Trạng Thái"};
         JComponent[] fields = new JComponent[labels.length];
         
-        // 1. Tự sinh mã và Khóa
         String maMoi = "CH01";
         if (controller != null) {
             maMoi = controller.layMaChuyenMoi();
@@ -279,17 +278,13 @@ public class ChuyenTauPanel extends JPanel {
         txtMaChuyen.setFocusable(false);
         fields[0] = txtMaChuyen;
         
-        // 2. ComboBox Mã Tàu (Lấy động từ DB qua Controller)
         JComboBox<String> cbxTau = new JComboBox<>();
         if (controller != null) {
             List<String> dsTauTuDB = controller.layDanhSachTauFormat();
-            for (String t : dsTauTuDB) {
-                cbxTau.addItem(t);
-            }
+            for (String t : dsTauTuDB) cbxTau.addItem(t);
         }
         fields[1] = cbxTau;
         
-        // 3. ComboBox Ga Đi & Ga Đến (Lấy động từ DB qua Controller)
         JComboBox<String> cbxGaDi = new JComboBox<>();
         JComboBox<String> cbxGaDen = new JComboBox<>();
         if (controller != null) {
@@ -302,13 +297,11 @@ public class ChuyenTauPanel extends JPanel {
         fields[2] = cbxGaDi;
         fields[3] = cbxGaDen;
         
-        // 4. JComboBox Chọn thời gian Đi
         JComboBox<String> cbxNgayDi = new JComboBox<>();
         JComboBox<String> cbxGioDi = new JComboBox<>();
         JComboBox<String> cbxPhutDi = new JComboBox<>();
         fields[4] = createTimePickerPanel(cbxNgayDi, cbxGioDi, cbxPhutDi);
         
-        // 5. JComboBox Chọn thời gian Đến
         JComboBox<String> cbxNgayDen = new JComboBox<>();
         JComboBox<String> cbxGioDen = new JComboBox<>();
         JComboBox<String> cbxPhutDen = new JComboBox<>();
@@ -350,8 +343,6 @@ public class ChuyenTauPanel extends JPanel {
                     JOptionPane.showMessageDialog(dialog, "Thêm thành công!");
                     controller.loadDanhSachChuyenTau();
                     dialog.dispose();
-                } else {
-                    JOptionPane.showMessageDialog(dialog, "Thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             } catch (DateTimeParseException ex) {
                 JOptionPane.showMessageDialog(dialog, "Lỗi định dạng thời gian!");
@@ -366,10 +357,8 @@ public class ChuyenTauPanel extends JPanel {
 
         String maChuyen = modelChuyenTau.getValueAt(row, 0).toString();
         String[] labels = {"Mã Tàu", "Ga Đi", "Ga Đến", "Thời Gian Đi", "Thời Gian Đến", "Trạng Thái"};
-        
         JComponent[] fields = new JComponent[labels.length];
         
-        // 1. ComboBox Mã Tàu form Sửa (Lấy từ DB và tự động chọn tàu cũ)
         JComboBox<String> cbxTau = new JComboBox<>();
         String oldMaTau = modelChuyenTau.getValueAt(row, 1).toString();
         if (controller != null) {
@@ -381,7 +370,6 @@ public class ChuyenTauPanel extends JPanel {
         }
         fields[0] = cbxTau;
         
-        // 2. ComboBox Ga Đi & Ga Đến (Lấy động từ DB và tự chọn ga cũ)
         JComboBox<String> cbxGaDi = new JComboBox<>();
         JComboBox<String> cbxGaDen = new JComboBox<>();
         String oldGaDi = modelChuyenTau.getValueAt(row, 2).toString();
@@ -399,7 +387,6 @@ public class ChuyenTauPanel extends JPanel {
         fields[1] = cbxGaDi;
         fields[2] = cbxGaDen;
         
-        // 3. Combo Thời Gian Đi & Đến form Sửa
         JComboBox<String> cbxNgayDi = new JComboBox<>();
         JComboBox<String> cbxGioDi = new JComboBox<>();
         JComboBox<String> cbxPhutDi = new JComboBox<>();
@@ -410,7 +397,6 @@ public class ChuyenTauPanel extends JPanel {
         JComboBox<String> cbxPhutDen = new JComboBox<>();
         fields[4] = createTimePickerPanel(cbxNgayDen, cbxGioDen, cbxPhutDen);
         
-        // Đổ ngược dữ liệu cũ lên ComboBox thời gian đi
         String oldTgDiStr = modelChuyenTau.getValueAt(row, 4).toString();
         if (!oldTgDiStr.isEmpty() && oldTgDiStr.contains(" ")) {
             String[] parts = oldTgDiStr.split(" ");
@@ -469,7 +455,6 @@ public class ChuyenTauPanel extends JPanel {
     private void xoaChuyenTau() {
         int row = tableChuyenTau.getSelectedRow();
         if (row == -1) { JOptionPane.showMessageDialog(this, "Chọn 1 chuyến tàu để xóa!"); return; }
-        
         String maChuyen = modelChuyenTau.getValueAt(row, 0).toString();
         int confirm = JOptionPane.showConfirmDialog(this, "Xóa chuyến tàu " + maChuyen + "?", "Xác nhận", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
@@ -482,32 +467,55 @@ public class ChuyenTauPanel extends JPanel {
         }
     }
 
-    // ================= LOGIC XỬ LÝ LỊCH TRÌNH =================
+    // ================= LOGIC XỬ LÝ LỊCH TRÌNH DỪNG ĐỖ (ĐÃ ĐỒNG BỘ THÔNG MINH) =================
     private void formThemLichTrinh() {
         int rowCt = tableChuyenTau.getSelectedRow();
         if (rowCt == -1) { JOptionPane.showMessageDialog(this, "Chọn một Chuyến Tàu ở bảng bên trái trước!"); return; }
         String maChuyen = modelChuyenTau.getValueAt(rowCt, 0).toString();
 
-        String[] labels = {"Mã Ga Dừng", "Thứ Tự Dừng", "T.Gian Đến (yyyy-MM-dd HH:mm)", "T.Gian Đi (yyyy-MM-dd HH:mm)"};
-        
+        String[] labels = {"Ga Dừng", "Thứ Tự Dừng", "Thời Gian Đến", "Thời Gian Đi"};
         JComponent[] fields = new JComponent[labels.length];
-        for (int i = 0; i < fields.length; i++) fields[i] = new JTextField();
+        
+        JComboBox<String> cbxGaDung = new JComboBox<>();
+        if (controller != null) {
+            List<String> dsGaTuDB = controller.layDanhSachGaFormat();
+            for (String ga : dsGaTuDB) cbxGaDung.addItem(ga);
+        }
+        fields[0] = cbxGaDung;
+        fields[1] = new JTextField();
+        
+        // 🌟 NÂNG CẤP: Trạm dừng trung gian luôn bắt buộc nhập đủ cả 2 mốc thời gian
+        JComboBox<String> cbxNgayDen = new JComboBox<>();
+        JComboBox<String> cbxGioDen = new JComboBox<>();
+        JComboBox<String> cbxPhutDen = new JComboBox<>();
+        fields[2] = createTimePickerPanel(cbxNgayDen, cbxGioDen, cbxPhutDen);
+        
+        JComboBox<String> cbxNgayDi = new JComboBox<>();
+        JComboBox<String> cbxGioDi = new JComboBox<>();
+        JComboBox<String> cbxPhutDi = new JComboBox<>();
+        fields[3] = createTimePickerPanel(cbxNgayDi, cbxGioDi, cbxPhutDi);
 
         JButton btnCancel = new JButton("Hủy");
         JButton btnSave = new JButton("Lưu");
 
-        JDialog dialog = component.createDinamicForm("Thêm Chặng Dừng", "Chuyến: " + maChuyen, "Nhập thông tin", labels, fields, new JButton[]{btnCancel, btnSave});
+        JDialog dialog = component.createDinamicForm("Thêm Chặng Dừng", "Chuyến: " + maChuyen, "Nhập thông tin chặng dừng mới", labels, fields, new JButton[]{btnCancel, btnSave});
 
         btnCancel.addActionListener(e -> dialog.dispose());
         btnSave.addActionListener(e -> {
             try {
+                String maGaDung = cbxGaDung.getSelectedItem() != null ? cbxGaDung.getSelectedItem().toString().split(" - ")[0] : "";
+                
                 LichTrinhDungDo lt = new LichTrinhDungDo();
                 lt.setMaChuyen(maChuyen);
-                lt.setMaGa(((JTextField)fields[0]).getText().trim());
+                lt.setMaGa(maGaDung);
                 lt.setThuTuDung(Integer.parseInt(((JTextField)fields[1]).getText().trim()));
                 
-                if (!((JTextField)fields[2]).getText().trim().isEmpty()) lt.setThoiGianDen(LocalDateTime.parse(((JTextField)fields[2]).getText().trim(), formatter));
-                if (!((JTextField)fields[3]).getText().trim().isEmpty()) lt.setThoiGianDi(LocalDateTime.parse(((JTextField)fields[3]).getText().trim(), formatter));
+                // Mặc định ép đọc và parse đầy đủ thời gian
+                String strDen = cbxNgayDen.getSelectedItem() + " " + cbxGioDen.getSelectedItem() + ":" + cbxPhutDen.getSelectedItem();
+                lt.setThoiGianDen(LocalDateTime.parse(strDen, formatter));
+
+                String strDi = cbxNgayDi.getSelectedItem() + " " + cbxGioDi.getSelectedItem() + ":" + cbxPhutDi.getSelectedItem();
+                lt.setThoiGianDi(LocalDateTime.parse(strDi, formatter));
 
                 if (controller != null && controller.themLichTrinh(lt)) {
                     JOptionPane.showMessageDialog(dialog, "Thêm chặng thành công!");
@@ -515,7 +523,7 @@ public class ChuyenTauPanel extends JPanel {
                     dialog.dispose();
                 }
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(dialog, "Lỗi định dạng dữ liệu (Kiểm tra lại số Thứ Tự và Thời Gian)!");
+                JOptionPane.showMessageDialog(dialog, "Lỗi dữ liệu! Vui lòng điền đầy đủ và đúng định dạng mốc thời gian trung gian.");
             }
         });
         dialog.setVisible(true);
@@ -527,37 +535,107 @@ public class ChuyenTauPanel extends JPanel {
         if (rowLt == -1 || rowCt == -1) { JOptionPane.showMessageDialog(this, "Chọn 1 chặng dừng để sửa!"); return; }
 
         String maChuyen = modelChuyenTau.getValueAt(rowCt, 0).toString();
-        String maGa = modelLichTrinh.getValueAt(rowLt, 1).toString(); 
+        String maGaCu = modelLichTrinh.getValueAt(rowLt, 1).toString(); 
         
-        String[] labels = {"Thứ Tự Dừng", "T.Gian Đến (yyyy-MM-dd HH:mm)", "T.Gian Đi (yyyy-MM-dd HH:mm)"};
+        String[] labels = {"Ga Dừng", "Thứ Tự Dừng", "Thời Gian Đến", "Thời Gian Đi"};
         JComponent[] fields = new JComponent[labels.length];
         
-        fields[0] = new JTextField(modelLichTrinh.getValueAt(rowLt, 0).toString());
-        fields[1] = new JTextField(modelLichTrinh.getValueAt(rowLt, 2).toString());
-        fields[2] = new JTextField(modelLichTrinh.getValueAt(rowLt, 3).toString());
+        JComboBox<String> cbxGaDung = new JComboBox<>();
+        if (controller != null) {
+            List<String> dsGaTuDB = controller.layDanhSachGaFormat();
+            for (String ga : dsGaTuDB) {
+                cbxGaDung.addItem(ga);
+                if (ga.startsWith(maGaCu)) cbxGaDung.setSelectedItem(ga);
+            }
+        }
+        fields[0] = cbxGaDung;
+        fields[1] = new JTextField(modelLichTrinh.getValueAt(rowLt, 0).toString());
+        
+        JComboBox<String> cbxNgayDen = new JComboBox<>();
+        JComboBox<String> cbxGioDen = new JComboBox<>();
+        JComboBox<String> cbxPhutDen = new JComboBox<>();
+        fields[2] = createTimePickerPanel(cbxNgayDen, cbxGioDen, cbxPhutDen);
+        
+        JComboBox<String> cbxNgayDi = new JComboBox<>();
+        JComboBox<String> cbxGioDi = new JComboBox<>();
+        JComboBox<String> cbxPhutDi = new JComboBox<>();
+        fields[3] = createTimePickerPanel(cbxNgayDi, cbxGioDi, cbxPhutDi);
+        
+        // 🌟 NÂNG CẤP THÔNG MINH: Nhận diện tự động chặn để khóa cứng đầu/cuối hành trình
+        boolean isGaDau = (rowLt == 0);
+        boolean isGaCuoi = (rowLt == tableLichTrinh.getRowCount() - 1);
+
+        if (isGaDau) {
+            // Ga Đầu hành trình $\rightarrow$ Khóa cứng thời gian Đến
+            cbxNgayDen.setEnabled(false); cbxGioDen.setEnabled(false); cbxPhutDen.setEnabled(false);
+        } else {
+            String oldTgDenStr = modelLichTrinh.getValueAt(rowLt, 2).toString();
+            if (!oldTgDenStr.isEmpty() && oldTgDenStr.contains(" ")) {
+                String[] parts = oldTgDenStr.split(" ");
+                cbxNgayDen.setSelectedItem(parts[0]);
+                if (parts[1].contains(":")) {
+                    String[] timeParts = parts[1].split(":");
+                    cbxGioDen.setSelectedItem(timeParts[0]);
+                    cbxPhutDen.setSelectedItem(timeParts[1]);
+                }
+            }
+        }
+        
+        if (isGaCuoi) {
+            // Ga Cuối hành trình $\rightarrow$ Khóa cứng thời gian Đi
+            cbxNgayDi.setEnabled(false); cbxGioDi.setEnabled(false); cbxPhutDi.setEnabled(false);
+        } else {
+            String oldTgDiStr = modelLichTrinh.getValueAt(rowLt, 3).toString();
+            if (!oldTgDiStr.isEmpty() && oldTgDiStr.contains(" ")) {
+                String[] parts = oldTgDiStr.split(" ");
+                cbxNgayDi.setSelectedItem(parts[0]);
+                if (parts[1].contains(":")) {
+                    String[] timeParts = parts[1].split(":");
+                    cbxGioDi.setSelectedItem(timeParts[0]);
+                    cbxPhutDi.setSelectedItem(timeParts[1]);
+                }
+            }
+        }
 
         JButton btnCancel = new JButton("Hủy");
         JButton btnSave = new JButton("Cập Nhật");
 
-        JDialog dialog = component.createDinamicForm("Sửa Chặng Dừng", "Ga: " + maGa, "Chuyến: " + maChuyen, labels, fields, new JButton[]{btnCancel, btnSave});
+        JDialog dialog = component.createDinamicForm("Sửa Chặng Dừng", "Ga gốc: " + maGaCu, "Chuyến: " + maChuyen, labels, fields, new JButton[]{btnCancel, btnSave});
 
         btnCancel.addActionListener(e -> dialog.dispose());
         btnSave.addActionListener(e -> {
             try {
+                String maGaMoi = cbxGaDung.getSelectedItem() != null ? cbxGaDung.getSelectedItem().toString().split(" - ")[0] : "";
                 LichTrinhDungDo lt = new LichTrinhDungDo();
                 lt.setMaChuyen(maChuyen);
-                lt.setMaGa(maGa);
-                lt.setThuTuDung(Integer.parseInt(((JTextField)fields[0]).getText().trim()));
-                if (!((JTextField)fields[1]).getText().trim().isEmpty()) lt.setThoiGianDen(LocalDateTime.parse(((JTextField)fields[1]).getText().trim(), formatter));
-                if (!((JTextField)fields[2]).getText().trim().isEmpty()) lt.setThoiGianDi(LocalDateTime.parse(((JTextField)fields[2]).getText().trim(), formatter));
+                lt.setMaGa(maGaMoi);
+                lt.setThuTuDung(Integer.parseInt(((JTextField)fields[1]).getText().trim()));
+                
+                // Lưu logic ép NULL chuẩn xác vào DB
+                if (isGaDau) {
+                    lt.setThoiGianDen(null);
+                } else {
+                    String strDen = cbxNgayDen.getSelectedItem() + " " + cbxGioDen.getSelectedItem() + ":" + cbxPhutDen.getSelectedItem();
+                    lt.setThoiGianDen(LocalDateTime.parse(strDen, formatter));
+                }
 
-                if (controller != null && controller.capNhatLichTrinh(lt)) {
-                    JOptionPane.showMessageDialog(dialog, "Cập nhật thành công!");
-                    controller.loadLichTrinhByMaChuyen(maChuyen);
-                    dialog.dispose();
+                if (isGaCuoi) {
+                    lt.setThoiGianDi(null);
+                } else {
+                    String strDi = cbxNgayDi.getSelectedItem() + " " + cbxGioDi.getSelectedItem() + ":" + cbxPhutDi.getSelectedItem();
+                    lt.setThoiGianDi(LocalDateTime.parse(strDi, formatter));
+                }
+
+                if (controller != null) {
+                    boolean check = controller.capNhatLichTrinhNangCao(lt, maGaCu);
+                    if (check) {
+                        JOptionPane.showMessageDialog(dialog, "Cập nhật thành công!");
+                        controller.loadLichTrinhByMaChuyen(maChuyen);
+                        dialog.dispose();
+                    }
                 }
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(dialog, "Lỗi định dạng dữ liệu!");
+                JOptionPane.showMessageDialog(dialog, "Lỗi cập nhật dữ liệu!");
             }
         });
         dialog.setVisible(true);

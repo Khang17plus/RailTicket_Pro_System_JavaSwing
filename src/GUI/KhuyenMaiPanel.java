@@ -7,18 +7,20 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import com.formdev.flatlaf.FlatLightLaf;
+import com.toedter.calendar.JDateChooser; 
 
 import Controller.KhuyenMaiController;
 import Entity.KhuyenMai;
 
-
 public class KhuyenMaiPanel extends JPanel {
     private KhuyenMaiController controller;
-    private Component component = new Component(); // Class Component dùng chung của bạn
+    private Component component = new Component(); 
     
-    // Thêm 3 biến này vào thuộc tính lớp để quản lý các số thống kê
     private JLabel lblDangApDung;
     private JLabel lblSapDienRa;
     private JLabel lblTongChienDich;
@@ -33,7 +35,6 @@ public class KhuyenMaiPanel extends JPanel {
     private JTable table;
     private DefaultTableModel tableModel;
 
-    // --- THÀNH PHẦN BỔ SUNG: Khai báo các nút bấm để gắn sự kiện Excel ---
     private JButton btnExportExcel;
     private JButton btnImportExcel;
 
@@ -41,20 +42,21 @@ public class KhuyenMaiPanel extends JPanel {
         this.controller = controller;
     }
 
-    // Tái sử dụng style Button từ KhachHangPanel
     public JButton createButtonExcel(String Cmt) {
         JButton btn = new JButton(Cmt);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         String style = "arc:12; focusWidth:0; font: bold 13;";
         
         if (Cmt.contains("Nhập")) {
-            btn.setBackground(new Color(59, 130, 246)); // Blue
+            btn.setBackground(new Color(59, 130, 246)); 
+            btn.setForeground(Color.WHITE);
         } else if (Cmt.contains("Tìm")) {
             btn.setBackground(Color.gray);
             btn.setForeground(Color.BLACK);
             btn.setPreferredSize(new Dimension(60, 36));
         } else {
-            btn.setBackground(new Color(34, 197, 94)); // Green
+            btn.setBackground(new Color(34, 197, 94)); 
+            btn.setForeground(Color.WHITE);
         }
         
         btn.setPreferredSize(new Dimension(140, 36));
@@ -64,11 +66,9 @@ public class KhuyenMaiPanel extends JPanel {
         return btn;
     }
 
-    // Tái sử dụng style Card thống kê
     public JPanel createCardstatistical(String IconURL, String title, String value) {
         JPanel card = new JPanel(new BorderLayout(15, 0));
         
-        // --- LÀM Y HỆT KHÁCH HÀNG: Đọc ảnh và scale kích thước ---
         ImageIcon icon = new ImageIcon(IconURL);
         Image img = icon.getImage().getScaledInstance(25, 25, Image.SCALE_SMOOTH);
         JLabel iconLabel = new JLabel(new ImageIcon(img));
@@ -120,7 +120,7 @@ public class KhuyenMaiPanel extends JPanel {
         
         JLabel title = new JLabel("Quản lý chương trình khuyến mãi");
         title.setFont(new Font("Arial", Font.BOLD, 22));
-        JLabel sub = new JLabel("Tạo và quản lý các mã giảm giá, sự kiện ưu đãi metro");
+        JLabel sub = new JLabel("Tạo và quản lý các mã giảm giá, sự kiện ưu đãi");
         sub.setForeground(Color.GRAY);
         sub.setFont(new Font("Arial", Font.PLAIN, 12));
         
@@ -135,7 +135,7 @@ public class KhuyenMaiPanel extends JPanel {
         headerR.add(createCardstatistical("img/time.png", "Sắp diễn ra", "00"));
         headerR.add(createCardstatistical("img/equal.png", "Tổng chiến dịch", "00"));
 
-        // --- ACTION PANEL (Search & Excel) ---
+        // --- ACTION PANEL ---
         JPanel actionPanel = new JPanel(new BorderLayout());
         actionPanel.setOpaque(false);
         
@@ -150,7 +150,6 @@ public class KhuyenMaiPanel extends JPanel {
         searchPanel.add(txtSearch);
         searchPanel.add(btnSearch);
 
-        // --- THÀNH PHẦN SỬA ĐỔI: Khởi tạo biến rõ ràng cho nút Excel ---
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         rightPanel.setOpaque(false);
         
@@ -176,7 +175,7 @@ public class KhuyenMaiPanel extends JPanel {
         JPanel tableCard = new JPanel(new BorderLayout());
         tableCard.putClientProperty("FlatLaf.style", "arc:20; border:12,12,12,12; background:#FFFFFF");
 
-        String[] columns = {"Mã KM", "Tên chương trình",  "Giá trị", "Loại", "Ngày bắt đầu", "Ngày kết thúc", "Trạng thái"};
+        String[] columns = {"Mã KM", "Tên chương trình", "Giá trị", "Loại", "Ngày bắt đầu", "Ngày kết thúc", "Trạng thái"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int col) { return false; }
@@ -200,9 +199,7 @@ public class KhuyenMaiPanel extends JPanel {
         main.add(tableCard, BorderLayout.CENTER);
         add(main, BorderLayout.CENTER);
         
-        // --- ĐĂNG KÝ CÁC SỰ KIỆN LẮNG NGHE (LISTENERS) ---
-        
-        // 1. Sự kiện tìm kiếm
+        // Listeners
         btnSearch.addActionListener(e -> {
             String keyword = txtSearch.getText().trim();
             if (controller != null) {
@@ -210,10 +207,8 @@ public class KhuyenMaiPanel extends JPanel {
             }
         });
 
-        // 2. THÀNH PHẦN BỔ SUNG: Sự kiện xuất file Excel
         btnExportExcel.addActionListener(e -> {
             if (controller == null) return;
-            
             JFileChooser fileChooser = new JFileChooser();
             fileChooser.setDialogTitle("Chọn vị trí lưu file Excel Khuyến Mãi");
             fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Excel Files (*.xlsx)", "xlsx"));
@@ -221,24 +216,19 @@ public class KhuyenMaiPanel extends JPanel {
             int userSelection = fileChooser.showSaveDialog(this);
             if (userSelection == JFileChooser.APPROVE_OPTION) {
                 java.io.File fileToSave = fileChooser.getSelectedFile();
-                
-                // Ép đuôi file luôn là .xlsx
                 if (!fileToSave.getAbsolutePath().endsWith(".xlsx")) {
                     fileToSave = new java.io.File(fileToSave.getAbsolutePath() + ".xlsx");
                 }
-                
                 if (controller.exportToExcel(fileToSave)) {
-                    JOptionPane.showMessageDialog(this, "Xuất file Excel khuyến mãi thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Xuất file Excel thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
                 } else {
                     JOptionPane.showMessageDialog(this, "Có lỗi xảy ra khi ghi file Excel!", "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
 
-        // 3. THÀNH PHẦN BỔ SUNG: Sự kiện nhập file Excel
         btnImportExcel.addActionListener(e -> {
             if (controller == null) return;
-            
             JFileChooser fileChooser = new JFileChooser();
             fileChooser.setDialogTitle("Chọn file Excel Khuyến Mãi để nạp");
             fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Excel Files (*.xlsx)", "xlsx"));
@@ -246,38 +236,28 @@ public class KhuyenMaiPanel extends JPanel {
             int userSelection = fileChooser.showOpenDialog(this);
             if (userSelection == JFileChooser.APPROVE_OPTION) {
                 java.io.File fileToOpen = fileChooser.getSelectedFile();
-                
-                // Gọi sang hàm xử lý import từ Controller
                 int rowsImported = controller.importFromExcel(fileToOpen);
-                
                 if (rowsImported > 0) {
-                    JOptionPane.showMessageDialog(this, "Nhập thành công " + rowsImported + " chương trình mới từ Excel!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Nhập thành công " + rowsImported + " chương trình mới!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
                 } else {
-                    JOptionPane.showMessageDialog(this, "Không có dữ liệu mới nào được thêm vào hệ thống!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Không có dữ liệu mới nào được thêm!", "Thông báo", JOptionPane.WARNING_MESSAGE);
                 }
             }
         });
     }
 
-    // 🔥 ĐÃ SỬA ĐỔI: Đồng bộ hóa logic hiển thị bảng JTable (Gom Tạm Ngưng về Hết Hạn)
     public void setData(List<KhuyenMai> list) {
         tableModel.setRowCount(0);
-        java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-        java.time.LocalDateTime bayGio = java.time.LocalDateTime.now();
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        LocalDateTime bayGio = LocalDateTime.now();
 
         for (KhuyenMai km : list) {
             String trangThaiHienThi = ""; 
-            
-            // Nếu bị tắt trạng thái HOẶC đã quá ngày kết thúc -> Gom hết về Hết hạn
             if (!km.isTrangThai() || (km.getNgayKetThuc() != null && bayGio.isAfter(km.getNgayKetThuc()))) {
                 trangThaiHienThi = "Hết hạn";
-            } 
-            // Nếu bật trạng thái nhưng chưa tới ngày chạy -> Sắp diễn ra
-            else if (km.getNgayBatDau() != null && bayGio.isBefore(km.getNgayBatDau())) {
+            } else if (km.getNgayBatDau() != null && bayGio.isBefore(km.getNgayBatDau())) {
                 trangThaiHienThi = "Sắp diễn ra";
-            } 
-            // Thỏa mãn mọi điều kiện -> Đang áp dụng
-            else {
+            } else {
                 trangThaiHienThi = "Đang áp dụng";
             }
 
@@ -297,17 +277,14 @@ public class KhuyenMaiPanel extends JPanel {
         capNhatThongKeCoDinh(allList);
     }
 
-    // 🔥 ĐÃ SỬA ĐỔI: Đồng bộ hóa logic đếm trên các Card CardStatistical khớp 100% với bảng
     public void capNhatThongKeCoDinh(List<KhuyenMai> allList) {
         int dangApDung = 0;
         int sapDienRa = 0;
         int hetHan = 0; 
         int tongChienDich = allList.size();
-        
-        java.time.LocalDateTime bayGio = java.time.LocalDateTime.now();
+        LocalDateTime bayGio = LocalDateTime.now();
 
         for (KhuyenMai km : allList) {
-            // Logic đếm bê nguyên từ hàm hiển thị bảng xuống để cam đoan khớp số liệu
             if (!km.isTrangThai() || (km.getNgayKetThuc() != null && bayGio.isAfter(km.getNgayKetThuc()))) {
                 hetHan++;
             } else if (km.getNgayBatDau() != null && bayGio.isBefore(km.getNgayBatDau())) {
@@ -340,17 +317,64 @@ public class KhuyenMaiPanel extends JPanel {
         return submenu;
     }
     
+    // 🔥 CẢI TIẾN: Hàm nhúng nút lịch trực tiếp vào đuôi ô JTextField bằng FlatLaf Trailing Component
+    private void setupCalendarButton(JTextField field) {
+        field.setEditable(false);
+        field.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        JButton btnCalendar = new JButton("📅");
+        btnCalendar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnCalendar.setContentAreaFilled(false);
+        btnCalendar.setFocusPainted(false);
+        
+        // 1. Chỉ định nút này thuộc nhóm nút trong JTextField
+        btnCalendar.putClientProperty("FlatLaf.styleClass", "textFieldButton");
+        
+        // 2. 🔥 CÁCH FIX TRIỆT ĐỂ: Ép FlatLaf sử dụng một chuỗi style trống, xóa sạch các thuộc tính thừa (như toolbar.margin)
+        btnCalendar.putClientProperty("FlatLaf.style", "margin:0,0,0,0; border:0,0,0,0; focusWidth:0");
+        
+        // 3. Đảm bảo xóa sạch Border kiểu cũ để tránh xung đột layout bên trong ô nhập liệu
+        btnCalendar.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
+        
+        // Sự kiện click mở bảng lịch
+        btnCalendar.addActionListener(e -> {
+            Window owner = SwingUtilities.getWindowAncestor(field);
+            DatePickerDialog picker = new DatePickerDialog(owner, field.getText());
+            picker.setVisible(true);
+            if (picker.isConfirmed()) {
+                field.setText(picker.getSelectedDateTimeString());
+            }
+        });
+        
+        field.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                btnCalendar.doClick();
+            }
+        });
+
+        field.putClientProperty("JTextField.trailingComponent", btnCalendar);
+    }
+
     private void themKhuyenMai() {
         String[] labels = {"Mã KM", "Tên KM", "Giá trị (%)", "Loại KM", "Ngày BĐ (dd/MM/yyyy HH:mm)", "Ngày KT (dd/MM/yyyy HH:mm)"};
         JTextField[] fields = new JTextField[labels.length];
         for (int i = 0; i < fields.length; i++) fields[i] = new JTextField();
 
         if (controller != null) {
-            String maTuDong = controller.phatSinhMaTuDong();
-            fields[0].setText(maTuDong); 
+            fields[0].setText(controller.phatSinhMaTuDong()); 
         }
         fields[0].setEditable(false); 
         fields[0].setBackground(new Color(240, 240, 240)); 
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        LocalDateTime hienTai = LocalDateTime.now();
+        fields[4].setText(hienTai.format(formatter));
+        fields[5].setText(hienTai.plusDays(7).format(formatter));
+
+        // Gọi hàm cấu hình nhúng nút lịch vào ô số 4 và 5
+        setupCalendarButton(fields[4]);
+        setupCalendarButton(fields[5]);
 
         JButton btnCancel = new JButton("Hủy");
         JButton btnSave = new JButton("Lưu");
@@ -364,13 +388,23 @@ public class KhuyenMaiPanel extends JPanel {
             try {
                 String ma = fields[0].getText().trim();
                 String ten = fields[1].getText().trim();
+                
+                if(fields[4].getText().isEmpty() || fields[5].getText().isEmpty()) {
+                    JOptionPane.showMessageDialog(dialog, "Vui lòng chọn đầy đủ ngày bắt đầu và kết thúc!");
+                    return;
+                }
+                
                 double giaTriNhap = Double.parseDouble(fields[2].getText().trim()); 
                 String loaiNhap = fields[3].getText().trim(); 
 
-                java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-                java.time.LocalDateTime bd = java.time.LocalDateTime.parse(fields[4].getText().trim(), formatter);
-                java.time.LocalDateTime kt = java.time.LocalDateTime.parse(fields[5].getText().trim(), formatter);
+                LocalDateTime bd = LocalDateTime.parse(fields[4].getText().trim(), formatter);
+                LocalDateTime kt = LocalDateTime.parse(fields[5].getText().trim(), formatter);
                 
+                if (bd.isAfter(kt)) {
+                    JOptionPane.showMessageDialog(dialog, "Lỗi: Ngày bắt đầu không được lớn hơn ngày kết thúc!");
+                    return;
+                }
+
                 KhuyenMai km = new KhuyenMai(ma, ten, loaiNhap, giaTriNhap, bd, kt, true);
 
                 if (controller != null && controller.themKhuyenMai(km)) {
@@ -378,12 +412,10 @@ public class KhuyenMaiPanel extends JPanel {
                     controller.loadDataToTable();
                     dialog.dispose();
                 } else {
-                    JOptionPane.showMessageDialog(dialog, "Lỗi khi lưu vào CSDL! Kiểm tra lại file DAO.");
+                    JOptionPane.showMessageDialog(dialog, "Lỗi khi lưu vào CSDL!");
                 }
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(dialog, "Lỗi: Ô Giá trị phải nhập số!");
-            } catch (java.time.format.DateTimeParseException ex) {
-                JOptionPane.showMessageDialog(dialog, "Lỗi: Sai định dạng ngày (dd/MM/yyyy HH:mm)!");
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(dialog, "Lỗi: " + ex.getMessage());
             }
@@ -394,15 +426,14 @@ public class KhuyenMaiPanel extends JPanel {
     private void xoaKhuyenMai() {
         int row = table.getSelectedRow();
         if (row == -1) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn một chương trình khuyến mãi trong bảng để xóa!");
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn một chương trình để xóa!");
             return;
         }
 
         String maKM = tableModel.getValueAt(row, 0).toString();
-
         int confirm = JOptionPane.showConfirmDialog(
             this, 
-            "Bạn có chắc chắn muốn xóa mã khuyến mãi: " + maKM + " không?\nLưu ý: Hành động này không thể hoàn tác!", 
+            "Bạn có chắc chắn muốn xóa mã khuyến mãi: " + maKM + " không?", 
             "Xác nhận xóa", 
             JOptionPane.YES_NO_OPTION,
             JOptionPane.WARNING_MESSAGE
@@ -413,7 +444,7 @@ public class KhuyenMaiPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "Đã xóa thành công mã: " + maKM);
                 controller.loadDataToTable(); 
             } else {
-                JOptionPane.showMessageDialog(this, "Xóa thất bại! Có thể mã này đang được sử dụng ở hóa đơn khác.");
+                JOptionPane.showMessageDialog(this, "Xóa thất bại!");
             }
         }
     }
@@ -435,6 +466,10 @@ public class KhuyenMaiPanel extends JPanel {
         fields[0].setEditable(false);
         fields[0].setBackground(new Color(240, 240, 240));
 
+        // Đồng bộ nhúng nút chọn lịch vào form sửa thông tin luôn
+        setupCalendarButton(fields[4]);
+        setupCalendarButton(fields[5]);
+
         JButton btnCancel = new JButton("Hủy");
         JButton btnUpdate = new JButton("Cập nhật");
 
@@ -450,9 +485,14 @@ public class KhuyenMaiPanel extends JPanel {
                 double giaTri = Double.parseDouble(fields[2].getText().trim());
                 String loai = fields[3].getText().trim();
 
-                java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-                java.time.LocalDateTime bd = java.time.LocalDateTime.parse(fields[4].getText().trim(), formatter);
-                java.time.LocalDateTime kt = java.time.LocalDateTime.parse(fields[5].getText().trim(), formatter);
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+                LocalDateTime bd = LocalDateTime.parse(fields[4].getText().trim(), formatter);
+                LocalDateTime kt = LocalDateTime.parse(fields[5].getText().trim(), formatter);
+
+                if (bd.isAfter(kt)) {
+                    JOptionPane.showMessageDialog(dialog, "Lỗi: Ngày bắt đầu không được lớn hơn ngày kết thúc!");
+                    return;
+                }
 
                 KhuyenMai km = new KhuyenMai(ma, ten, loai, giaTri, bd, kt, true);
 
@@ -469,5 +509,107 @@ public class KhuyenMaiPanel extends JPanel {
         });
 
         dialog.setVisible(true);
+    }
+}
+
+// ==========================================
+// THÀNH PHẦN ĐƯỢC TÁCH BIỆT: BẢNG CHỌN NGÀY GIỜ CHUYÊN BIỆT
+// ==========================================
+class DatePickerDialog extends JDialog {
+    private JDateChooser dateChooser;
+    private JSpinner timeSpinner;
+    private boolean confirmed = false;
+    private LocalDateTime resultDateTime;
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+    public DatePickerDialog(Window owner, String initialValue) {
+        super(owner, "Chọn Thời Gian", ModalityType.APPLICATION_MODAL);
+        setLayout(new BorderLayout(10, 10));
+        setSize(new Dimension(360, 160));
+        setLocationRelativeTo(owner);
+        setResizable(false);
+        
+        JPanel mainContent = new JPanel(new GridBagLayout());
+        mainContent.setBorder(BorderFactory.createEmptyBorder(15, 15, 10, 15));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 5, 5, 5);
+
+        dateChooser = new JDateChooser();
+        dateChooser.setDateFormatString("dd/MM/yyyy");
+        dateChooser.getCalendarButton().setCursor(new Cursor(Cursor.HAND_CURSOR));
+        dateChooser.setPreferredSize(new Dimension(140, 30));
+        
+        SpinnerDateModel timeModel = new SpinnerDateModel(new Date(), null, null, Calendar.MINUTE);
+        timeSpinner = new JSpinner(timeModel);
+        JSpinner.DateEditor timeEditor = new JSpinner.DateEditor(timeSpinner, "HH:mm");
+        timeSpinner.setEditor(timeEditor);
+        timeSpinner.setPreferredSize(new Dimension(75, 30));
+
+        if (initialValue != null && !initialValue.trim().isEmpty()) {
+            try {
+                LocalDateTime existingLdt = LocalDateTime.parse(initialValue.trim(), formatter);
+                Date existingDate = Date.from(existingLdt.atZone(ZoneId.systemDefault()).toInstant());
+                dateChooser.setDate(existingDate);
+                timeSpinner.setValue(existingDate);
+            } catch (Exception e) {
+                dateChooser.setDate(new Date());
+            }
+        } else {
+            dateChooser.setDate(new Date());
+        }
+
+        gbc.gridx = 0; gbc.gridy = 0;
+        mainContent.add(new JLabel("Chọn Ngày:"), gbc);
+        gbc.gridx = 1;
+        mainContent.add(dateChooser, gbc);
+        
+        gbc.gridx = 2;
+        mainContent.add(new JLabel("Giờ:"), gbc);
+        gbc.gridx = 3;
+        mainContent.add(timeSpinner, gbc);
+
+        JPanel actionRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
+        actionRow.setBackground(new Color(245, 245, 245));
+        actionRow.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY));
+        
+        JButton btnOk = new JButton("Xác nhận");
+        JButton btnCancel = new JButton("Đóng");
+        
+        btnOk.putClientProperty("FlatLaf.style", "background:#22c55e; foreground:#ffffff; arc:8; focusWidth:0;");
+        btnCancel.putClientProperty("FlatLaf.style", "arc:8; focusWidth:0;");
+
+        btnOk.addActionListener(e -> {
+            if (dateChooser.getDate() != null) {
+                LocalDate datePart = dateChooser.getDate().toInstant()
+                    .atZone(ZoneId.systemDefault()).toLocalDate();
+                    
+                Date timeValue = (Date) timeSpinner.getValue();
+                java.time.LocalTime timePart = timeValue.toInstant()
+                    .atZone(ZoneId.systemDefault()).toLocalTime();
+                
+                resultDateTime = datePart.atTime(timePart);
+                confirmed = true;
+                dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn ngày hợp lệ!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+            }
+        });
+        
+        btnCancel.addActionListener(e -> dispose());
+        
+        actionRow.add(btnCancel);
+        actionRow.add(btnOk);
+
+        add(mainContent, BorderLayout.CENTER);
+        add(actionRow, BorderLayout.SOUTH);
+    }
+
+    public boolean isConfirmed() {
+        return confirmed;
+    }
+
+    public String getSelectedDateTimeString() {
+        return resultDateTime != null ? resultDateTime.format(formatter) : "";
     }
 }

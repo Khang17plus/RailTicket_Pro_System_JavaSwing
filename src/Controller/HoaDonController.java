@@ -12,13 +12,13 @@ public class HoaDonController {
     public HoaDonController(HoaDonPanel view) {
         this.view = view;
         this.model = new HoaDonDAO();
+        lamMoiDuLieu();
     }
 
     // Cập nhật bảng hóa đơn và các Card thống kê
     public void lamMoiDuLieu() {
         List<HoaDon> ds = model.getAll();
         view.setData(ds);
-        // Ở đây bạn có thể viết thêm logic tính tổng doanh thu để update Card
     }
 
     // Logic xử lý khi nhấn nút In Vé QR

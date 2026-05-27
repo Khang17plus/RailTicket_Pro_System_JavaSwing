@@ -44,8 +44,11 @@ public class Main extends JFrame {
     private BanVeController banVeController;
     
     private ThuePanel thuePanel;
+    private ThueController thuecontroller;
     private HoTroPanel hoTroPanel;
 
+    private HoaDonPanel hoaDonPanel;
+    private HoaDonController hoaDonController;
     // Giao diện chính
     private CardLayout cardLayout;
     private JPanel content;
@@ -123,7 +126,15 @@ public class Main extends JFrame {
         tkController = new ThongKeController(tkp);
         
         thuePanel = new ThuePanel();
+        thuecontroller = new ThueController(thuePanel);
+        thuePanel.setController(thuecontroller);
+        
         hoTroPanel = new HoTroPanel();
+        
+        hoaDonPanel = new HoaDonPanel();
+        hoaDonController = new HoaDonController(hoaDonPanel);
+        hoaDonPanel.setController(hoaDonController);
+        
     }
 
     // ==========================================
@@ -214,7 +225,7 @@ public class Main extends JFrame {
         content.add(nvp, "nhanvien");
         content.add(taiKhoanPanel, "taikhoan");
         content.add(new VeTauPanel(), "banve");
-        content.add(new HoaDonPanel(), "hoadon");
+        content.add(hoaDonPanel, "hoadon");
         content.add(khuyenMaiPanel, "khuyenmai");
         content.add(tauvatoa, "tauvatoa");
         content.add(gatau, "gatau");
@@ -223,6 +234,7 @@ public class Main extends JFrame {
         content.add(hoTroPanel, "hotro");
         content.add(tkp, "thongke");
         content.add(banVePanel, "panel_banve");
+        
         
         return content;
     }
@@ -241,6 +253,9 @@ public class Main extends JFrame {
             tkController.loadStatistics();
         } else if ("khachhang".equals(cardName) && khController != null) {
             khController.loadDataToTable();
+        }
+        else if ("hoadon".equals(cardName) && hoaDonController != null) {
+            hoaDonController.lamMoiDuLieu(); 
         }
     }
 
@@ -274,6 +289,7 @@ public class Main extends JFrame {
             showCard(targetCard);
             triggerControllerRefresh(targetCard);
         });
+        
         return btn;
     }
 

@@ -18,7 +18,12 @@ public class HoaDonPanel extends JPanel {
     private Component component = new Component();
     private JTable table;
     private DefaultTableModel tableModel;
-
+   private Controller.HoaDonController controller; 
+    
+    public void setController(Controller.HoaDonController controller) {
+        this.controller = controller;
+    }
+    
     public JButton createButtonExcel(String Cmt) {
         JButton btn = new JButton(Cmt);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -151,7 +156,7 @@ public class HoaDonPanel extends JPanel {
         add(main, BorderLayout.CENTER);
 
         // --- GỌI HÀM LOAD DỮ LIỆU TẠI ĐÂY ---
-        loadDataFromDatabase(); 
+//        loadDataFromDatabase(); 
     }
 
     private void hienThiChiTiet() {

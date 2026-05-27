@@ -6,8 +6,12 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import com.toedter.calendar.JDateChooser;
+
 import Controller.ThueController;
 import Entity.Thue;
 
@@ -25,7 +29,8 @@ public class ThuePanel extends JPanel {
     
     private JTable table;
     private DefaultTableModel tableModel;
-    
+    private JButton btnExportExcel;
+    private JButton btnImportExcel;
     private JLabel lblTongThue;
     private JLabel lblDangApDung;
     private JLabel lblNgungApDung;
@@ -42,12 +47,14 @@ public class ThuePanel extends JPanel {
         String style = "arc:12; focusWidth:0; font: bold 13;";
         if (Cmt.contains("Nhập")) {
             btn.setBackground(new Color(59, 130, 246)); 
+            btn.setForeground(Color.WHITE);
         } else if (Cmt.contains("Tìm")) {
             btn.setBackground(Color.gray); 
             btn.setForeground(Color.BLACK); 
             btn.setPreferredSize(new Dimension(60, 36));
         } else {
             btn.setBackground(new Color(34, 197, 94)); 
+            btn.setForeground(Color.WHITE);
         }
         btn.setPreferredSize(new Dimension(140, 36)); 
         btn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
@@ -85,7 +92,6 @@ public class ThuePanel extends JPanel {
         card.add(iconLabel, BorderLayout.WEST);
         card.add(textPanel, BorderLayout.CENTER);
         
-        // 🔥 FIX ĐỀU NHAU: Ép kích thước cố định cho Card Thống Kê
         card.setPreferredSize(new Dimension(165, 55));
         card.putClientProperty("FlatLaf.style", "arc:10; border:10,10,10,10; background:#FFFFFF");
 
@@ -110,7 +116,6 @@ public class ThuePanel extends JPanel {
         JPanel headerR = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
         headerR.setOpaque(false);
 
-        // Đọc ảnh icon từ thư mục img/ tương tự Khách Hàng
         JPanel cardNgungApDung = createCardstatistical("img/expired.png", "Ngừng áp dụng ", "00");
         JPanel cardDangApDung = createCardstatistical("img/valid.png", "Đang áp dụng  ", "00");
         JPanel cardTongThue = createCardstatistical("img/equal.png", "Tổng loại thuế ", "00");
@@ -136,11 +141,11 @@ public class ThuePanel extends JPanel {
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         rightPanel.setOpaque(false);
 
-        JButton imports = createButtonExcel("Nhập file excel");
-        JButton export = createButtonExcel("Xuất file excel");
+        btnExportExcel = createButtonExcel("Xuất file excel");
+        btnImportExcel = createButtonExcel("Nhập file excel");
 
-        rightPanel.add(export);
-        rightPanel.add(imports);
+        rightPanel.add(btnExportExcel);
+        rightPanel.add(btnImportExcel);
 
         actionPanel.add(searchPanel, BorderLayout.WEST);
         actionPanel.add(rightPanel, BorderLayout.CENTER);
@@ -204,6 +209,43 @@ public class ThuePanel extends JPanel {
                 controller.timKiemThue(txtSearch.getText().trim());
             }
         });
+        btnExportExcel.addActionListener(e -> {
+            if (controller == null) return;
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Chọn vị trí lưu file Excel Khuyến Mãi");
+            fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Excel Files (*.xlsx)", "xlsx"));
+            
+            int userSelection = fileChooser.showSaveDialog(this);
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                java.io.File fileToSave = fileChooser.getSelectedFile();
+                if (!fileToSave.getAbsolutePath().endsWith(".xlsx")) {
+                    fileToSave = new java.io.File(fileToSave.getAbsolutePath() + ".xlsx");
+                }
+                if (controller.exportToExcel(fileToSave)) {
+                    JOptionPane.showMessageDialog(this, "Xuất file Excel thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Có lỗi xảy ra khi ghi file Excel!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        btnImportExcel.addActionListener(e -> {
+            if (controller == null) return;
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Chọn file Excel Khuyến Mãi để nạp");
+            fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Excel Files (*.xlsx)", "xlsx"));
+            
+            int userSelection = fileChooser.showOpenDialog(this);
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                java.io.File fileToOpen = fileChooser.getSelectedFile();
+                int rowsImported = controller.importFromExcel(fileToOpen);
+                if (rowsImported > 0) {
+                    JOptionPane.showMessageDialog(this, "Nhập thành công " + rowsImported + " chương trình mới!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Không có dữ liệu mới nào được thêm!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+                }
+            }
+        });
     }
 
     public void setData(List<Thue> list) {
@@ -230,8 +272,6 @@ public class ThuePanel extends JPanel {
                 trangThaiStr
             });
         }
-        
-        // Tự động làm tươi các ô Card số liệu thống kê mỗi khi nhận danh sách mới
         capNhatThongKeCoDinh(list);
     }
 
@@ -243,7 +283,7 @@ public class ThuePanel extends JPanel {
         for (Thue t : allList) {
             if (t.isTrangThai()) {
                 if (t.getNgayBatDau() != null && bayGio.isBefore(t.getNgayBatDau())) {
-                    // Sắp diễn ra - Có thể tính riêng hoặc gộp tùy ý bạn
+                    // Sắp diễn ra
                 } else {
                     dangApDung++;
                 }
@@ -279,33 +319,100 @@ public class ThuePanel extends JPanel {
         return submenu;
     }
 
+    // 🔥 CẢI TIẾN: Thay đổi từ nhúng Trailing Component sang Panel độc lập để dập tắt lỗi FlatLaf hoàn toàn
+    private JPanel createDatePickerPanel(JTextField field) {
+        field.setEditable(false);
+        field.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        JPanel container = new JPanel(new BorderLayout(2, 0));
+        container.setOpaque(false);
+        
+        JButton btnCalendar = new JButton("📅");
+        btnCalendar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnCalendar.setFocusPainted(false);
+        btnCalendar.putClientProperty("FlatLaf.style", "arc:6; focusWidth:0; margin:2,5,2,5;");
+        
+        btnCalendar.addActionListener(e -> {
+            Window owner = SwingUtilities.getWindowAncestor(container);
+            ThueDatePickerDialog picker = new ThueDatePickerDialog(owner, field.getText());
+            picker.setVisible(true);
+            if (picker.isConfirmed()) {
+                field.setText(picker.getSelectedDateTimeString());
+            }
+        });
+        
+        field.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                btnCalendar.doClick();
+            }
+        });
+
+        container.add(field, BorderLayout.CENTER);
+        container.add(btnCalendar, BorderLayout.EAST);
+        return container;
+    }
+
     private void themThue() {
         String[] labels = {
-            "Mã Thuế", "Tên Loại Thuế", "Mức Thuế (%)", 
-            "Ngày Bắt Đầu (dd/MM/yyyy HH:mm)", "Trạng Thế (1: Áp dụng, 0: Ngừng)"
+            "Mã Thuế", "Tên Loại Thuế", "Mức Thuế (%)",
+            "Ngày Bắt Đầu", "Trạng Thái (1: Áp dụng, 0: Ngừng)"
         };
-        JTextField[] fields = new JTextField[labels.length];
-        for (int i = 0; i < fields.length; i++) {
-            fields[i] = new JTextField();
+
+        // Đổi mảng từ JTextField[] sang JComponent[] để chứa được cả JPanel lịch
+        JComponent[] fields = new JComponent[labels.length];
+        
+        JTextField txtMa = new JTextField();
+        JTextField txtTen = new JTextField();
+        JTextField txtMucThue = new JTextField();
+        JTextField txtNgayBD = new JTextField();
+        JTextField txtTrangThai = new JTextField("1"); // Để sẵn mặc định là áp dụng
+
+        // 🌟 ĐOẠN PHÁT SINH MÃ TỰ ĐỘNG GIỐNG KHUYẾN MÃI
+        if (controller != null) {
+            txtMa.setText(controller.phatSinhMaTuDong()); 
         }
+        txtMa.setEditable(false); 
+        txtMa.setBackground(new Color(240, 240, 240)); 
+
+        // Tự động điền ngày hiện tại làm mẫu
+        txtNgayBD.setText(LocalDateTime.now().format(formatter));
+        
+        fields[0] = txtMa;
+        fields[1] = txtTen;
+        fields[2] = txtMucThue;
+        
+        // Bọc ô nhập ngày vào Panel chứa nút lịch an toàn
+        fields[3] = createDatePickerPanel(txtNgayBD);
+        fields[4] = txtTrangThai;
 
         JButton btnCancel = new JButton("Hủy bỏ");
         JButton btnSave = new JButton("Lưu Thiết Lập");
 
         JDialog dialog = component.createDinamicForm(
-            "Thêm Loại Thuế", "Thiết Lập Thuế", "Vui lòng điền thông tin và mức thuế áp dụng", 
-            labels, fields, new JButton[]{btnCancel, btnSave}
+            "Thêm Loại Thuế",
+            "Thiết Lập Thuế",
+            "Vui lòng điền thông tin và mức thuế áp dụng",
+            labels,
+            fields,
+            new JButton[]{btnCancel, btnSave}
         );
 
         btnCancel.addActionListener(e -> dialog.dispose());
 
         btnSave.addActionListener(e -> {
             try {
-                String maThue = fields[0].getText().trim();
-                String tenThue = fields[1].getText().trim();
-                double phanTram = Double.parseDouble(fields[2].getText().trim());
-                LocalDateTime ngayBD = LocalDateTime.parse(fields[3].getText().trim(), formatter);
-                boolean trangThai = fields[4].getText().trim().equals("1");
+                String maThue = txtMa.getText().trim();
+                String tenThue = txtTen.getText().trim();
+                
+                if (txtNgayBD.getText().trim().isEmpty()) {
+                    JOptionPane.showMessageDialog(dialog, "Vui lòng chọn ngày bắt đầu!");
+                    return;
+                }
+                
+                double phanTram = Double.parseDouble(txtMucThue.getText().trim());
+                LocalDateTime ngayBD = LocalDateTime.parse(txtNgayBD.getText().trim(), formatter);
+                boolean trangThai = txtTrangThai.getText().trim().equals("1");
 
                 if (maThue.isEmpty() || tenThue.isEmpty()) {
                     JOptionPane.showMessageDialog(dialog, "Không được để trống thông tin!", "Lỗi", JOptionPane.WARNING_MESSAGE);
@@ -313,20 +420,26 @@ public class ThuePanel extends JPanel {
                 }
 
                 Thue newThue = new Thue(maThue, tenThue, phanTram, ngayBD, trangThai);
+
                 if (controller != null && controller.themThue(newThue)) {
                     JOptionPane.showMessageDialog(dialog, "Thêm thiết lập thuế thành công!");
-                    controller.loadDataToTable(); 
+                    controller.loadDataToTable();
                     dialog.dispose();
                 } else {
                     JOptionPane.showMessageDialog(dialog, "Lỗi khi thêm vào CSDL!", "Thất bại", JOptionPane.ERROR_MESSAGE);
                 }
+
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(dialog, "Mức thuế phải là số số hợp lệ!", "Sai định dạng", JOptionPane.ERROR_MESSAGE);
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(dialog, "Vui lòng nhập đúng định dạng số và ngày (dd/MM/yyyy HH:mm)!", "Sai định dạng", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, "Lỗi: " + ex.getMessage(), "Lỗi hệ thống", JOptionPane.ERROR_MESSAGE);
             }
         });
 
         dialog.setVisible(true);
     }
+    
+    
 
     private void xoaThue() {
         int selectedRow = table.getSelectedRow();
@@ -347,6 +460,8 @@ public class ThuePanel extends JPanel {
             }
         }
     }
+    
+    
 
     private void suaThue() {
         int selectedRow = table.getSelectedRow();
@@ -355,30 +470,49 @@ public class ThuePanel extends JPanel {
             return;
         }
 
-        // Đọc dữ liệu cũ từ Table
         String maThue = tableModel.getValueAt(selectedRow, 0).toString();
         String tenThue = tableModel.getValueAt(selectedRow, 1).toString();
         String phanTramRaw = tableModel.getValueAt(selectedRow, 2).toString().replace("%", "");
         String ngayBD = tableModel.getValueAt(selectedRow, 3).toString();
         String trangThaiRaw = tableModel.getValueAt(selectedRow, 4).toString();
 
-        // 🔥 ĐỒNG BỘ: Sử dụng lại component.createDinamicForm cho form Sửa nhìn cực kỳ chuyên nghiệp
         String[] labels = {
-            "Tên Loại Thuế", "Mức Thuế (%)", 
-            "Ngày Bắt Đầu (dd/MM/yyyy HH:mm)", "Trạng Thái (1: Áp dụng, 0: Ngừng)"
+            "Mã Thuế (Không sửa)",
+            "Tên Loại Thuế",
+            "Mức Thuế (%)",
+            "Ngày Bắt Đầu",
+            "Trạng Thái (1: Áp dụng, 0: Ngừng)"
         };
-        JTextField[] fields = new JTextField[labels.length];
-        fields[0] = new JTextField(tenThue);
-        fields[1] = new JTextField(phanTramRaw);
-        fields[2] = new JTextField(ngayBD);
-        fields[3] = new JTextField(trangThaiRaw.contains("Đang") || trangThaiRaw.contains("Sắp") ? "1" : "0");
+
+        JComponent[] fields = new JComponent[labels.length];
+        
+        JTextField txtMa = new JTextField(maThue);
+        JTextField txtTen = new JTextField(tenThue);
+        JTextField txtMucThue = new JTextField(phanTramRaw);
+        JTextField txtNgayBD = new JTextField(ngayBD);
+        JTextField txtTrangThai = new JTextField(trangThaiRaw.contains("Đang") || trangThaiRaw.contains("Sắp") ? "1" : "0");
+        
+        txtMa.setEditable(false);
+        txtMa.setBackground(new Color(240, 240, 240));
+
+        fields[0] = txtMa;
+        fields[1] = txtTen;
+        fields[2] = txtMucThue;
+        
+        // Tái sử dụng Panel bọc nút lịch cho form sửa
+        fields[3] = createDatePickerPanel(txtNgayBD);
+        fields[4] = txtTrangThai;
 
         JButton btnCancel = new JButton("Hủy bỏ");
         JButton btnUpdate = new JButton("Cập nhật");
 
         JDialog dialog = component.createDinamicForm(
-            "Sửa Cấu Hình Thuế", "Mã số thuế: " + maThue, "Vui lòng chỉnh sửa các thông số cần thiết", 
-            labels, fields, new JButton[]{btnCancel, btnUpdate}
+            "Sửa Cấu Hình Thuế",
+            "Mã số thuế: " + maThue,
+            "Vui lòng chỉnh sửa các thông số cần thiết",
+            labels,
+            fields,
+            new JButton[]{btnCancel, btnUpdate}
         );
 
         btnCancel.addActionListener(ev -> dialog.dispose());
@@ -387,10 +521,10 @@ public class ThuePanel extends JPanel {
             try {
                 Thue updatedThue = new Thue(
                     maThue,
-                    fields[0].getText().trim(),
-                    Double.parseDouble(fields[1].getText().trim()),
-                    LocalDateTime.parse(fields[2].getText().trim(), formatter),
-                    fields[3].getText().trim().equals("1")
+                    txtTen.getText().trim(),
+                    Double.parseDouble(txtMucThue.getText().trim()),
+                    LocalDateTime.parse(txtNgayBD.getText().trim(), formatter),
+                    txtTrangThai.getText().trim().equals("1")
                 );
 
                 if (controller != null && controller.updateThue(updatedThue)) {
@@ -400,8 +534,10 @@ public class ThuePanel extends JPanel {
                 } else {
                     JOptionPane.showMessageDialog(dialog, "Cập nhật thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(dialog, "Mức thuế phải là số hợp lệ!", "Sai định dạng", JOptionPane.ERROR_MESSAGE);
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(dialog, "Vui lòng nhập đúng định dạng số và ngày (dd/MM/yyyy HH:mm)!", "Lỗi định dạng", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, "Lỗi định dạng thời gian hoặc dữ liệu!", "Lỗi cấu trúc", JOptionPane.ERROR_MESSAGE);
             }
         });
 
@@ -413,5 +549,107 @@ public class ThuePanel extends JPanel {
         if (keyword != null && controller != null) {
             controller.timKiemThue(keyword.trim());
         }
+    }
+}
+
+// ==========================================
+// THÀNH PHẦN ĐƯỢC TÁCH BIỆT: BẢNG CHỌN NGÀY GIỜ CHUYÊN BIỆT CHO THUẾ
+// ==========================================
+class ThueDatePickerDialog extends JDialog {
+    private JDateChooser dateChooser;
+    private JSpinner timeSpinner;
+    private boolean confirmed = false;
+    private LocalDateTime resultDateTime;
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+    public ThueDatePickerDialog(Window owner, String initialValue) {
+        super(owner, "Chọn Thời Gian Áp Dụng", ModalityType.APPLICATION_MODAL);
+        setLayout(new BorderLayout(10, 10));
+        setSize(new Dimension(360, 160));
+        setLocationRelativeTo(owner);
+        setResizable(false);
+        
+        JPanel mainContent = new JPanel(new GridBagLayout());
+        mainContent.setBorder(BorderFactory.createEmptyBorder(15, 15, 10, 15));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 5, 5, 5);
+
+        dateChooser = new JDateChooser();
+        dateChooser.setDateFormatString("dd/MM/yyyy");
+        dateChooser.getCalendarButton().setCursor(new Cursor(Cursor.HAND_CURSOR));
+        dateChooser.setPreferredSize(new Dimension(140, 30));
+        
+        SpinnerDateModel timeModel = new SpinnerDateModel(new Date(), null, null, Calendar.MINUTE);
+        timeSpinner = new JSpinner(timeModel);
+        JSpinner.DateEditor timeEditor = new JSpinner.DateEditor(timeSpinner, "HH:mm");
+        timeSpinner.setEditor(timeEditor);
+        timeSpinner.setPreferredSize(new Dimension(75, 30));
+
+        if (initialValue != null && !initialValue.trim().isEmpty()) {
+            try {
+                LocalDateTime existingLdt = LocalDateTime.parse(initialValue.trim(), formatter);
+                Date existingDate = Date.from(existingLdt.atZone(ZoneId.systemDefault()).toInstant());
+                dateChooser.setDate(existingDate);
+                timeSpinner.setValue(existingDate);
+            } catch (Exception e) {
+                dateChooser.setDate(new Date());
+            }
+        } else {
+            dateChooser.setDate(new Date());
+        }
+
+        gbc.gridx = 0; gbc.gridy = 0;
+        mainContent.add(new JLabel("Chọn Ngày:"), gbc);
+        gbc.gridx = 1;
+        mainContent.add(dateChooser, gbc);
+        
+        gbc.gridx = 2;
+        mainContent.add(new JLabel("Giờ:"), gbc);
+        gbc.gridx = 3;
+        mainContent.add(timeSpinner, gbc);
+
+        JPanel actionRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
+        actionRow.setBackground(new Color(245, 245, 245));
+        actionRow.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY));
+        
+        JButton btnOk = new JButton("Xác nhận");
+        JButton btnCancel = new JButton("Đóng");
+        
+        btnOk.putClientProperty("FlatLaf.style", "background:#22c55e; foreground:#ffffff; arc:8; focusWidth:0;");
+        btnCancel.putClientProperty("FlatLaf.style", "arc:8; focusWidth:0;");
+
+        btnOk.addActionListener(e -> {
+            if (dateChooser.getDate() != null) {
+                LocalDate datePart = dateChooser.getDate().toInstant()
+                    .atZone(ZoneId.systemDefault()).toLocalDate();
+                    
+                Date timeValue = (Date) timeSpinner.getValue();
+                java.time.LocalTime timePart = timeValue.toInstant()
+                    .atZone(ZoneId.systemDefault()).toLocalTime();
+                
+                resultDateTime = datePart.atTime(timePart);
+                confirmed = true;
+                dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn ngày hợp lệ!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+            }
+        });
+        
+        btnCancel.addActionListener(e -> dispose());
+        
+        actionRow.add(btnCancel);
+        actionRow.add(btnOk);
+
+        add(mainContent, BorderLayout.CENTER);
+        add(actionRow, BorderLayout.SOUTH);
+    }
+
+    public boolean isConfirmed() {
+        return confirmed;
+    }
+
+    public String getSelectedDateTimeString() {
+        return resultDateTime != null ? resultDateTime.format(formatter) : "";
     }
 }
