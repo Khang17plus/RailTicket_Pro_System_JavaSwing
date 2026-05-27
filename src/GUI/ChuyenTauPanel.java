@@ -126,19 +126,16 @@ public class ChuyenTauPanel extends JPanel {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         panel.setOpaque(false);
 
-        // Đổ dữ liệu 30 ngày tính từ hôm nay
         LocalDate today = LocalDate.now();
         for (int i = -5; i < 30; i++) { 
             cbxNgay.addItem(today.plusDays(i).toString());
         }
         cbxNgay.setSelectedItem(today.toString()); 
 
-        // Đổ dữ liệu 24 giờ
         for (int i = 0; i < 24; i++) {
             cbxGio.addItem(String.format("%02d", i));
         }
 
-        // Đổ dữ liệu 60 phút
         for (int i = 0; i < 60; i++) {
             cbxPhut.addItem(String.format("%02d", i));
         }
@@ -282,30 +279,25 @@ public class ChuyenTauPanel extends JPanel {
         txtMaChuyen.setFocusable(false);
         fields[0] = txtMaChuyen;
         
-        // 2. ComboBox Mã Tàu (15 tàu từ dữ liệu mẫu SQL)
+        // 2. ComboBox Mã Tàu (Lấy động từ DB qua Controller)
         JComboBox<String> cbxTau = new JComboBox<>();
-        String[] dsTau = {
-            "T01 - SE1 (Express)", "T02 - SE2 (Express)", "T03 - SE3 (Express)",
-            "T04 - SE4 (Express)", "T05 - SE5 (Express)", "T06 - SE6 (Express)",
-            "T07 - SE7 (Express)", "T08 - SE8 (Express)", "T09 - TN1 (Normal)",
-            "T10 - TN2 (Normal)", "T11 - SPT1 (Tourist)", "T12 - SPT2 (Tourist)",
-            "T13 - SNT1 (Quality)", "T14 - SNT2 (Quality)", "T15 - LVP1 (VIP)"
-        };
-        for(String t : dsTau) cbxTau.addItem(t);
+        if (controller != null) {
+            List<String> dsTauTuDB = controller.layDanhSachTauFormat();
+            for (String t : dsTauTuDB) {
+                cbxTau.addItem(t);
+            }
+        }
         fields[1] = cbxTau;
         
-        // 3. ComboBox Ga Đi & Ga Đến (15 ga từ dữ liệu mẫu SQL)
+        // 3. ComboBox Ga Đi & Ga Đến (Lấy động từ DB qua Controller)
         JComboBox<String> cbxGaDi = new JComboBox<>();
         JComboBox<String> cbxGaDen = new JComboBox<>();
-        String[] dsGa = {
-            "G01 - Ga Hà Nội", "G02 - Ga Phủ Lý", "G03 - Ga Nam Định", "G04 - Ga Ninh Bình", 
-            "G05 - Ga Thanh Hóa", "G06 - Ga Vinh", "G07 - Ga Đồng Hới", "G08 - Ga Huế", 
-            "G09 - Ga Đà Nẵng", "G10 - Ga Quảng Ngãi", "G11 - Ga Quy Nhơn", "G12 - Ga Nha Trang", 
-            "G13 - Ga Tháp Chàm", "G14 - Ga Biên Hòa", "G15 - Ga Sài Gòn"
-        };
-        for(String ga : dsGa) {
-            cbxGaDi.addItem(ga);
-            cbxGaDen.addItem(ga);
+        if (controller != null) {
+            List<String> dsGaTuDB = controller.layDanhSachGaFormat();
+            for (String ga : dsGaTuDB) {
+                cbxGaDi.addItem(ga);
+                cbxGaDen.addItem(ga);
+            }
         }
         fields[2] = cbxGaDi;
         fields[3] = cbxGaDen;
@@ -377,40 +369,32 @@ public class ChuyenTauPanel extends JPanel {
         
         JComponent[] fields = new JComponent[labels.length];
         
-        // 1. ComboBox Mã Tàu form Sửa
+        // 1. ComboBox Mã Tàu form Sửa (Lấy từ DB và tự động chọn tàu cũ)
         JComboBox<String> cbxTau = new JComboBox<>();
-        String[] dsTau = {
-            "T01 - SE1 (Express)", "T02 - SE2 (Express)", "T03 - SE3 (Express)",
-            "T04 - SE4 (Express)", "T05 - SE5 (Express)", "T06 - SE6 (Express)",
-            "T07 - SE7 (Express)", "T08 - SE8 (Express)", "T09 - TN1 (Normal)",
-            "T10 - TN2 (Normal)", "T11 - SPT1 (Tourist)", "T12 - SPT2 (Tourist)",
-            "T13 - SNT1 (Quality)", "T14 - SNT2 (Quality)", "T15 - LVP1 (VIP)"
-        };
         String oldMaTau = modelChuyenTau.getValueAt(row, 1).toString();
-        for(String t : dsTau) {
-            cbxTau.addItem(t);
-            if(t.startsWith(oldMaTau)) cbxTau.setSelectedItem(t);
+        if (controller != null) {
+            List<String> dsTauTuDB = controller.layDanhSachTauFormat();
+            for (String t : dsTauTuDB) {
+                cbxTau.addItem(t);
+                if (t.startsWith(oldMaTau)) cbxTau.setSelectedItem(t);
+            }
         }
         fields[0] = cbxTau;
         
-        // 2. ComboBox Ga Đi & Ga Đến form Sửa
+        // 2. ComboBox Ga Đi & Ga Đến (Lấy động từ DB và tự chọn ga cũ)
         JComboBox<String> cbxGaDi = new JComboBox<>();
         JComboBox<String> cbxGaDen = new JComboBox<>();
-        String[] dsGa = {
-            "G01 - Ga Hà Nội", "G02 - Ga Phủ Lý", "G03 - Ga Nam Định", "G04 - Ga Ninh Bình", 
-            "G05 - Ga Thanh Hóa", "G06 - Ga Vinh", "G07 - Ga Đồng Hới", "G08 - Ga Huế", 
-            "G09 - Ga Đà Nẵng", "G10 - Ga Quảng Ngãi", "G11 - Ga Quy Nhơn", "G12 - Ga Nha Trang", 
-            "G13 - Ga Tháp Chàm", "G14 - Ga Biên Hòa", "G15 - Ga Sài Gòn"
-        };
-                         
         String oldGaDi = modelChuyenTau.getValueAt(row, 2).toString();
         String oldGaDen = modelChuyenTau.getValueAt(row, 3).toString();
         
-        for(String ga : dsGa) {
-            cbxGaDi.addItem(ga);
-            cbxGaDen.addItem(ga);
-            if(ga.startsWith(oldGaDi)) cbxGaDi.setSelectedItem(ga);
-            if(ga.startsWith(oldGaDen)) cbxGaDen.setSelectedItem(ga);
+        if (controller != null) {
+            List<String> dsGaTuDB = controller.layDanhSachGaFormat();
+            for (String ga : dsGaTuDB) {
+                cbxGaDi.addItem(ga);
+                cbxGaDen.addItem(ga);
+                if (ga.startsWith(oldGaDi)) cbxGaDi.setSelectedItem(ga);
+                if (ga.startsWith(oldGaDen)) cbxGaDen.setSelectedItem(ga);
+            }
         }
         fields[1] = cbxGaDi;
         fields[2] = cbxGaDen;
@@ -426,7 +410,7 @@ public class ChuyenTauPanel extends JPanel {
         JComboBox<String> cbxPhutDen = new JComboBox<>();
         fields[4] = createTimePickerPanel(cbxNgayDen, cbxGioDen, cbxPhutDen);
         
-        // Đổ ngược dữ liệu cũ lên ComboBox thời gian
+        // Đổ ngược dữ liệu cũ lên ComboBox thời gian đi
         String oldTgDiStr = modelChuyenTau.getValueAt(row, 4).toString();
         if (!oldTgDiStr.isEmpty() && oldTgDiStr.contains(" ")) {
             String[] parts = oldTgDiStr.split(" ");

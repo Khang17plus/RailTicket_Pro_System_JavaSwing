@@ -49,6 +49,24 @@ public class TauDAO {
         return null;
     }
     
+    // 🔹 Lấy danh sách tàu định dạng "Mã - Tên" để đổ vào ComboBox (MỚI THÊM)
+    public List<String> getDanhSachTauFormat() {
+        List<String> list = new ArrayList<>();
+        String sql = "SELECT maTau, tenTau FROM Tau ORDER BY maTau ASC";
+        
+        try (Connection conn = ConnectDB.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            
+            while (rs.next()) {
+                String tauFormat = rs.getString("maTau") + " - " + rs.getString("tenTau");
+                list.add(tauFormat);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
 
     // 🔹 Thêm tàu
     public boolean insert(Tau tau) {
@@ -116,21 +134,21 @@ public class TauDAO {
         return tau;
     }
     
-    // getMâTaumax 
-   public String getMaxMaTau() {
-    String sql = "SELECT TOP 1 maTau FROM Tau " +
-                 "WHERE maTau LIKE 'T%' " +
-                 "ORDER BY LEN(maTau) DESC, " +
-                 "CAST(SUBSTRING(maTau, 2, LEN(maTau)) AS INT) DESC";
-    try (Connection conn = ConnectDB.getInstance().getConnection();
-         PreparedStatement ps = conn.prepareStatement(sql);
-         ResultSet rs = ps.executeQuery()) {
-        if (rs.next()) {
-            return rs.getString("maTau");
+    // getMaTaumax 
+    public String getMaxMaTau() {
+        String sql = "SELECT TOP 1 maTau FROM Tau " +
+                     "WHERE maTau LIKE 'T%' " +
+                     "ORDER BY LEN(maTau) DESC, " +
+                     "CAST(SUBSTRING(maTau, 2, LEN(maTau)) AS INT) DESC";
+        try (Connection conn = ConnectDB.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getString("maTau");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-    } catch (SQLException e) {
-        e.printStackTrace();
+        return null;
     }
-    return null;
-}
 }

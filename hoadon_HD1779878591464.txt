@@ -1,0 +1,13 @@
+========== HÓA ĐƠN BÁN VÉ TÀU ==========
+Mã HD: HD1779878591464
+Khách hàng: KH1779878591176
+Ngày lập: 2026-05-27T17:43:18.030473
+Chuyến tàu: CHUYEN_SE1_01
+----------------------------------------
+Số ghế     Loại ghế   Hành khách           CCCD            Giá            
+2          Ghế ngồi   mẫn cu nhỏ           0916156722      200000         
+7          Ghế ngồi   mẫn cu nhỏ1          0916156722      200000         
+6          Ghế ngồi   mẫn cu nhỏ2          0916156722      200000         
+----------------------------------------
+Tổng thanh toán: 600000.0 VND
+Cảm ơn quý khách đã sử dụng dịch vụ!

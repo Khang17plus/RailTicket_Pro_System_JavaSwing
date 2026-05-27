@@ -19,6 +19,12 @@ public class BanVeController {
         this.view.setController(this);
     }
 
+    // Load danh sách ga từ database
+    public void loadDanhSachGa() {
+        List<GaTau> dsGa = dao.getAllGa();
+        view.loadGaComboBox(dsGa);
+    }
+
     public void timKiemChuyen(String maGaDi, String maGaDen, LocalDate ngayDi) {
         if (maGaDi.equals(maGaDen)) {
             JOptionPane.showMessageDialog(view, "Ga đi và ga đến không được trùng nhau!", "Lỗi", JOptionPane.ERROR_MESSAGE);
@@ -38,11 +44,23 @@ public class BanVeController {
         view.hienThiSoDoGhe(dsVe, maChuyen, maToa);
     }
 
+    // Tìm khách hàng theo CCCD
+    public KhachHang timKhachHangTheoCCCD(String cccd) {
+        return dao.findKhachHangByCCCD(cccd);
+    }
+
+    // Tạo khách hàng mới
+    public String taoKhachHangMoi(String tenKH, String cccd, String soDienThoai, String email) {
+        return dao.insertKhachHang(tenKH, cccd, soDienThoai, email);
+    }
+
+    // Thanh toán với thông tin hành khách
     public void thanhToan(List<VeTau> dsVeChon, String maKH, String maNV, String phuongThuc) {
         if (dsVeChon.isEmpty()) {
             JOptionPane.showMessageDialog(view, "Giỏ hàng trống!");
             return;
         }
+        
         HoaDon hd = new HoaDon();
         boolean success = dao.datVe(dsVeChon.get(0).getMaChuyen(), dsVeChon, maKH, maNV, phuongThuc, hd);
         
@@ -62,11 +80,17 @@ public class BanVeController {
             fw.write("========== HÓA ĐƠN BÁN VÉ TÀU ==========\n");
             fw.write("Mã HD: " + hd.getMaHoaDon() + "\n");
             fw.write("Khách hàng: " + hd.getMaKH() + "\n");
+            fw.write("Ngày lập: " + java.time.LocalDateTime.now() + "\n");
             fw.write("Chuyến tàu: " + dsVe.get(0).getMaChuyen() + "\n");
             fw.write("----------------------------------------\n");
-            fw.write(String.format("%-10s %-10s %-15s\n", "Mã ghế", "Số ghế", "Giá"));
+            fw.write(String.format("%-10s %-10s %-20s %-15s %-15s\n", "Số ghế", "Loại ghế", "Hành khách", "CCCD", "Giá"));
             for (VeTau v : dsVe) {
-                fw.write(String.format("%-10s %-10d %-15.0f\n", v.getMaGhe(), v.getSoGhe(), v.getGiaGoc()));
+                fw.write(String.format("%-10d %-10s %-20s %-15s %-15.0f\n", 
+                    v.getSoGhe(), 
+                    v.getLoaiGhe(), 
+                    v.getTenHanhKhach() != null ? v.getTenHanhKhach() : "",
+                    v.getSoCCCD() != null ? v.getSoCCCD() : "",
+                    v.getGiaGoc()));
             }
             fw.write("----------------------------------------\n");
             fw.write("Tổng thanh toán: " + hd.getTongThanhToan() + " VND\n");

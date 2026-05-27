@@ -10,7 +10,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GaTauDAO {
-	
+	public List<String> getDanhSachGaFormat() {
+        List<String> list = new ArrayList<>();
+        String sql = "SELECT maGa, tenGa FROM GaTau ORDER BY maGa ASC";
+        
+        try (Connection conn = ConnectDB.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            
+            while (rs.next()) {
+                // Ghép thành chuỗi "G01 - Ga Hà Nội"
+                String gaFormat = rs.getString("maGa") + " - " + rs.getString("tenGa");
+                list.add(gaFormat);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
 	// Tìm ga theo địa chỉ (chính xác)
 	public GaTau findByDiaChi(String diaChi) {
 	    String sql = "SELECT * FROM GaTau WHERE diaChi = ?";
