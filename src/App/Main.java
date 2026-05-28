@@ -61,10 +61,10 @@ public class Main extends JFrame {
     // ==========================================
     // 2. KHAI BÁO CÁC SUB-MENU DẠNG CHUỖI MẶC ĐỊNH
     // ==========================================
-    private final String[] veOptions = { "Thêm vé", "Xóa vé", "Sửa vé", "Tra cứu vé", "Bán vé" };
-    private final String[] hoaDonOptions = { "Tạo hóa đơn", "Xóa hóa đơn", "Tra cứu hóa đơn" };
-    private final String[] chuyenTauOptions = { "Thêm chuyến", "Xóa chuyến", "Sửa chuyến", "Tra cứu chuyến" };
-    private final String[] thongKeOptions = { "Doanh thu", "Vé bán", "Khách hàng" };
+
+    
+   
+   
 
     // ==========================================
     // CONSTRUCTOR: KHỞI TẠO HỆ THỐNG
@@ -180,9 +180,9 @@ public class Main extends JFrame {
         menuPanel.add(Box.createVerticalStrut(5));
         
         // -- Menu dùng mảng String mặc định --
-        menuPanel.add(createNavButton("Quản lí vé", "img/ticket-fill.png", veOptions));
+        menuPanel.add(createNavButton("Quản lí vé", "img/ticket-fill.png"));
         menuPanel.add(Box.createVerticalStrut(5));
-        menuPanel.add(createNavButton("Hóa đơn", "img/bill-line.png", hoaDonOptions));
+        menuPanel.add(createNavButton("Hóa đơn", "img/bill-line.png"));
         menuPanel.add(Box.createVerticalStrut(5));
         
         // -- Tiếp tục List động --
@@ -196,11 +196,11 @@ public class Main extends JFrame {
         menuPanel.add(Box.createVerticalStrut(5));
         
         // -- Trở lại mảng String --
-        menuPanel.add(createNavButton("Quản lí chuyến tàu", "img/subway.png", chuyenTauOptions));
+        menuPanel.add(createNavButton("Quản lí chuyến tàu", "img/subway.png"));
         menuPanel.add(Box.createVerticalStrut(5));
         menuPanel.add(createNavButton("Quản lí khuyến mãi", "img/discount.png", khuyenMaiPanel.getMenuOption(), "khuyenmai"));
         menuPanel.add(Box.createVerticalStrut(5));
-        menuPanel.add(createNavButton("Thống kê", "img/bar-chart-box-line.png", thongKeOptions));
+        menuPanel.add(createNavButton("Thống kê", "img/bar-chart-box-line.png"));
         menuPanel.add(Box.createVerticalStrut(5));
         
         // -- Menu Hỗ Trợ (Xử lý chuyển tab nội bộ) --

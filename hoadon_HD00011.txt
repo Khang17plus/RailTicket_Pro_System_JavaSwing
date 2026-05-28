@@ -1,0 +1,15 @@
+========== HÓA ĐƠN BÁN VÉ TÀU ==========
+Mã HD: HD00011
+Khách hàng (Mã): KH002
+Ngày lập: 2026-05-28T09:15:37.986429300
+Chuyến tàu: CHUYEN_SE2_01
+Tổng tiền hàng: 200,000 VND
+Giảm giá: 5 VND
+Thuế: 10,000 VND
+Tổng thanh toán: 209,995 VND
+----------------------------------------
+Số ghế     Loại ghế   Hành khách           CCCD            Giá            
+4          Ghế ngồi                                        200000         
+----------------------------------------
+Phương thức: Tiền mặt
+Cảm ơn quý khách đã tin dùng dịch vụ!

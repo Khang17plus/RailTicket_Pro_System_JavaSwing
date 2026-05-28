@@ -209,6 +209,7 @@ public class TaiKhoanPanel extends JPanel {
         add(main, BorderLayout.CENTER);
         
         
+        
     }
 
     public void setData(List<TaiKhoan> list) {

@@ -243,7 +243,7 @@ public class BanVePanel extends JPanel {
             double tongGoc = gioHang.stream().mapToDouble(VeTau::getGiaGoc).sum();
             double giam=0, thue=0;
             int idxKM = cbKM.getSelectedIndex(); 
-            if(idxKM>0){ KhuyenMai km = dsKM.get(idxKM-1); giam = km.getLoaiKM().equals("FIXED")? tongGoc*km.getGiaTri()/100: tongGoc*km.getGiaTri()/100; }
+            if(idxKM>0){ KhuyenMai km = dsKM.get(idxKM-1); giam = km.getLoaiKM().equals("FIXED")? tongGoc -km.getGiaTri(): tongGoc*km.getGiaTri()/100; }
             double sauGiam = tongGoc - giam;
             int idxT = cbThue.getSelectedIndex();
             if(idxT>0){ Thue t = dsThue.get(idxT-1); thue = sauGiam * t.getPhanTram()/100; }

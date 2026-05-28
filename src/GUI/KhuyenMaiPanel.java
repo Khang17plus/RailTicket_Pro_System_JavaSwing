@@ -357,7 +357,7 @@ public class KhuyenMaiPanel extends JPanel {
     }
 
     private void themKhuyenMai() {
-        String[] labels = {"Mã KM", "Tên KM", "Giá trị (%)", "Loại KM", "Ngày BĐ (dd/MM/yyyy HH:mm)", "Ngày KT (dd/MM/yyyy HH:mm)"};
+        String[] labels = {"Mã KM", "Tên KM", "Giá trị", "Loại KM", "Ngày BĐ (dd/MM/yyyy HH:mm)", "Ngày KT (dd/MM/yyyy HH:mm)"};
         JTextField[] fields = new JTextField[labels.length];
         for (int i = 0; i < fields.length; i++) fields[i] = new JTextField();
 
